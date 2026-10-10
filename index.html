@@ -662,12 +662,31 @@
 
         <!-- MODE 1: Voice Microphone Panel -->
         <div id="panel-intake-voice" class="flex flex-col items-center space-y-3">
-          <button id="mic-btn" onclick="toggleMicRecording()" class="w-20 h-20 rounded-full bg-blue-700 hover:bg-blue-800 text-white flex items-center justify-center shadow-lg transition">
-            <svg class="w-9 h-9" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 100-6 3 3 0 000 6z"></path>
-            </svg>
-          </button>
-          <p id="mic-label" class="font-bold text-slate-900 text-sm">Tap Microphone to Speak</p>
+          <div class="relative flex items-center justify-center">
+            <button id="mic-btn" onclick="toggleMicRecording()" class="relative z-10 w-24 h-24 rounded-full bg-blue-700 hover:bg-blue-800 text-white flex items-center justify-center shadow-xl transition-all transform hover:scale-105 active:scale-95">
+              <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 100-6 3 3 0 000 6z"></path>
+              </svg>
+            </button>
+            <div id="mic-ripple" class="hidden absolute -inset-2 rounded-full bg-red-500/30 animate-ping pointer-events-none"></div>
+          </div>
+          <div class="text-center space-y-1">
+            <p id="mic-label" class="font-bold text-slate-900 text-sm">Tap Microphone to Speak</p>
+            <div id="mic-status-badge" class="hidden inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700 border border-red-200">
+              <span class="w-2 h-2 rounded-full bg-red-600 animate-pulse"></span>
+              <span id="mic-status-text">Live Voice Intake Active</span>
+            </div>
+          </div>
+          <!-- Live Real-Time Audio Equalizer Waveform -->
+          <div id="audio-waveform-container" class="hidden flex items-end justify-center gap-1.5 h-7 pt-1">
+            <span class="w-1.5 bg-[#223D79] rounded-full animate-pulse h-3"></span>
+            <span class="w-1.5 bg-blue-600 rounded-full animate-bounce h-6"></span>
+            <span class="w-1.5 bg-red-500 rounded-full animate-pulse h-7"></span>
+            <span class="w-1.5 bg-emerald-500 rounded-full animate-bounce h-5"></span>
+            <span class="w-1.5 bg-amber-500 rounded-full animate-pulse h-6"></span>
+            <span class="w-1.5 bg-[#223D79] rounded-full animate-bounce h-4"></span>
+            <span class="w-1.5 bg-blue-500 rounded-full animate-pulse h-5"></span>
+          </div>
         </div>
 
         <!-- MODE 2: Type Symptoms Panel (Direct Keyboard & Quick Chips) -->
@@ -713,6 +732,17 @@
               <span id="trans-loading-spinner" class="hidden text-[10px] text-emerald-600 animate-pulse">Translating via Sarvam Mayura AI...</span>
             </span>
             <p id="translation-text" class="text-xs text-emerald-900 font-bold mt-0.5 min-h-[18px]">Bilateral knee joint pain with morning stiffness for 6 months.</p>
+          </div>
+          <!-- Live Sarvam Voice Playback Notification Banner -->
+          <div id="audio-playback-banner" class="hidden p-2.5 bg-indigo-50 border border-indigo-200 rounded-xl text-left flex items-center justify-between text-xs text-indigo-900 font-semibold shadow-sm transition-all">
+            <div class="flex items-center gap-2">
+              <span class="flex h-2.5 w-2.5 relative">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-indigo-600"></span>
+              </span>
+              <span id="audio-playback-text">🔊 Sarvam Bulbul Indic Audio Speaking...</span>
+            </div>
+            <button onclick="stopAllAudio()" class="text-indigo-700 hover:text-indigo-950 text-[11px] underline font-bold px-2 py-0.5 rounded hover:bg-indigo-100">Stop</button>
           </div>
         </div>
 
@@ -2486,6 +2516,8 @@
       if ("speechSynthesis" in window) {
         window.speechSynthesis.cancel();
       }
+      const banner = document.getElementById("audio-playback-banner");
+      if (banner) banner.classList.add("hidden");
     }
 
     function speakAudio(rawText) {
@@ -2507,6 +2539,13 @@
         .replace(/\bOPD\b/gi, "OPD")
         .trim();
 
+      const banner = document.getElementById("audio-playback-banner");
+      const bannerTxt = document.getElementById("audio-playback-text");
+      if (banner) {
+        if (bannerTxt) bannerTxt.innerText = "🔊 Sarvam Bulbul Indic Audio Speaking...";
+        banner.classList.remove("hidden");
+      }
+
       const thisRequestId = currentTtsRequestId;
       fetch("/api/v1/ai/tts", {
         method: "POST",
@@ -2516,6 +2555,9 @@
         if (thisRequestId !== currentTtsRequestId) return; // Stale request, audio was stopped/overridden
         if (data && data.audio_base64 && isVoiceActive) {
           currentAudioPlayer = new Audio("data:audio/wav;base64," + data.audio_base64);
+          currentAudioPlayer.onended = () => {
+            if (banner) banner.classList.add("hidden");
+          };
           currentAudioPlayer.play().catch(e => {
             console.log("Sarvam Audio play caught, falling back to browser synthesis:", e);
             playBrowserSynthesis(cleanText);
@@ -2545,6 +2587,19 @@
         utterance.lang = currentLanguage;
         utterance.rate = 0.95;
         utterance.pitch = 1.0;
+
+        const banner = document.getElementById("audio-playback-banner");
+        const bannerTxt = document.getElementById("audio-playback-text");
+        if (banner) {
+          if (bannerTxt) bannerTxt.innerText = "🔊 Audio Guidance Speaking...";
+          banner.classList.remove("hidden");
+        }
+        utterance.onend = () => {
+          if (banner) banner.classList.add("hidden");
+        };
+        utterance.onerror = () => {
+          if (banner) banner.classList.add("hidden");
+        };
 
         const voices = (window.speechSynthesis.getVoices && window.speechSynthesis.getVoices().length > 0)
           ? window.speechSynthesis.getVoices()
@@ -2947,6 +3002,60 @@
     let previousAccumulatedSpeech = "";
     let scannedDocumentsList = [];
 
+    function getLanguageMicPrompts(lang) {
+      const prompts = {
+        "te-IN": {
+          listening: "🎙️ వింటున్నాము... మాట్లాడండి (ఆపడానికి నొక్కండి)",
+          tapAgain: "🎙️ మళ్లీ మాట్లాడటానికి మైక్ నొక్కండి",
+          waiting: "\"మీ మాటలు వింటున్నాము... దయచేసి చెప్పండి...\"",
+          status: "వాయిస్ ఇన్పుట్ యాక్టివ్ (తెలుగు)"
+        },
+        "hi-IN": {
+          listening: "🎙️ सुन रहे हैं... कृपया बोलें (रोकने के लिए दबाएं)",
+          tapAgain: "🎙️ दोबारा बोलने के लिए माइक दबाएं",
+          waiting: "\"आपकी आवाज़ सुन रहे हैं... कृपया बोलें...\"",
+          status: "वॉइस इनपुट सक्रिय (हिन्दी)"
+        },
+        "ta-IN": {
+          listening: "🎙️ கேட்கிறது... பேசுங்கள் (நிறுத்த தட்டவும்)",
+          tapAgain: "🎙️ மீண்டும் பேச மைக்கை தட்டவும்",
+          waiting: "\"உங்கள் குரலைக் கேட்கிறோம்... பேசுங்கள்...\"",
+          status: "குரல் பதிவு செயலில் உள்ளது (தமிழ்)"
+        },
+        "kn-IN": {
+          listening: "🎙️ ಆಲಿಸುತ್ತಿದ್ದೇವೆ... ಮಾತನಾಡಿ (ನಿಲ್ಲಿಸಲು ಒತ್ತಿರಿ)",
+          tapAgain: "🎙️ ಮತ್ತೆ ಮಾತನಾಡಲು ಮೈಕ್ ಒತ್ತಿರಿ",
+          waiting: "\"ನಿಮ್ಮ ಧ್ವನಿಯನ್ನು ಆಲಿಸುತ್ತಿದ್ದೇವೆ... ಮಾತನಾಡಿ...\"",
+          status: "ಧ್ವನಿ ಇನ್‌ಪುಟ್ ಸಕ್ರಿಯ (ಕನ್ನಡ)"
+        },
+        "mr-IN": {
+          listening: "🎙️ ऐकत आहोत... कृपया बोला (थांबवण्यासाठी टॅप करा)",
+          tapAgain: "🎙️ पुन्हा बोलण्यासाठी माइक टॅप करा",
+          waiting: "\"तुमचा आवाज ऐकत आहोत... कृपया बोला...\"",
+          status: "व्हॉइस इनपुट सक्रिय (मराठी)"
+        },
+        "bn-IN": {
+          listening: "🎙️ শুনছি... অনুগ্রহ করে বলুন (থামাতে ট্যাপ করুন)",
+          tapAgain: "🎙️ আবার বলতে মাইক ট্যাপ করুন",
+          waiting: "\"আপনার কথা শুনছি... অনুগ্রহ করে বলুন...\"",
+          status: "ভয়েস ইনপুট সক্রিয় (বাংলা)"
+        },
+        "gu-IN": {
+          listening: "🎙️ સાંભળી રહ્યા છીએ... બોલો (અટકાવવા માટે દબાવો)",
+          tapAgain: "🎙️ ફરી બોલવા માટે માઇક દબાવો",
+          waiting: "\"તમારો અવાજ સાંભળી રહ્યા છીએ... બોલો...\"",
+          status: "વૉઇસ ઇનપુટ સક્રિય (ગુજરાતી)"
+        },
+        "en-IN": {
+          listening: "🎙️ Listening... Speak now (Tap to Stop)",
+          tapAgain: "🎙️ Tap Microphone to Speak Again",
+          waiting: "\"Listening to your voice... Speak clearly...\"",
+          status: "Live Voice Intake Active (English)"
+        }
+      };
+      return prompts[lang] || prompts["en-IN"];
+    }
+
     function toggleMicRecording() {
       const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
       
@@ -2955,6 +3064,8 @@
         return;
       }
 
+      const pInfo = getLanguageMicPrompts(currentLanguage);
+
       if (isRecording) {
         if (recognition) {
           try { recognition.stop(); } catch(e) {}
@@ -2962,8 +3073,12 @@
         isRecording = false;
         document.getElementById("mic-btn")?.classList.remove("pulse-mic", "bg-red-600");
         document.getElementById("mic-btn")?.classList.add("bg-blue-700");
+        document.getElementById("mic-ripple")?.classList.add("hidden");
+        document.getElementById("mic-status-badge")?.classList.add("hidden");
+        document.getElementById("audio-waveform-container")?.classList.add("hidden");
+
         const micLabel = document.getElementById("mic-label");
-        const d_dict = I18N[currentLanguage] || I18N["en-IN"]; if (micLabel) micLabel.innerText = d_dict.micLabel || "Tap Microphone to Speak";
+        if (micLabel) micLabel.innerText = pInfo.tapAgain;
         return;
       }
 
@@ -2984,16 +3099,24 @@
           previousAccumulatedSpeech = "";
           currentPatient.selectedSymptom = "";
           stopAllAudio();
+
           document.getElementById("mic-btn")?.classList.add("pulse-mic", "bg-red-600");
           document.getElementById("mic-btn")?.classList.remove("bg-blue-700");
+          document.getElementById("mic-ripple")?.classList.remove("hidden");
+          document.getElementById("mic-status-badge")?.classList.remove("hidden");
+          document.getElementById("audio-waveform-container")?.classList.remove("hidden");
+
+          const statusTxt = document.getElementById("mic-status-text");
+          if (statusTxt) statusTxt.innerText = pInfo.status;
+
           const micLabel = document.getElementById("mic-label");
-          if (micLabel) micLabel.innerText = (currentLanguage === "en-IN") ? "🎙️ Listening... Speak now (Tap to Stop)" : "🎙️ వింటున్నాము... మాట్లాడండి (Tap to Stop)";
+          if (micLabel) micLabel.innerText = pInfo.listening;
           
           const transEl = document.getElementById("transcription-text");
-          if (transEl) transEl.innerText = (currentLanguage === "en-IN") ? "\"Listening to your voice...\"" : "\"మీ మాటలు వింటున్నాము... దయచేసి చెప్పండి...\"";
+          if (transEl) transEl.innerText = pInfo.waiting;
           
           const engEl = document.getElementById("translation-text");
-          if (engEl) engEl.innerText = "Listening to what you say...";
+          if (engEl) engEl.innerText = "Translating your voice input with Sarvam AI...";
         };
 
         recognition.onresult = function(event) {
@@ -3018,10 +3141,13 @@
         };
 
         recognition.onerror = function(event) {
-          console.warn("Speech recognition error / Brave privacy block:", event.error);
+          console.warn("Speech recognition error / privacy block:", event.error);
           isRecording = false;
           document.getElementById("mic-btn")?.classList.remove("pulse-mic", "bg-red-600");
           document.getElementById("mic-btn")?.classList.add("bg-blue-700");
+          document.getElementById("mic-ripple")?.classList.add("hidden");
+          document.getElementById("mic-status-badge")?.classList.add("hidden");
+          document.getElementById("audio-waveform-container")?.classList.add("hidden");
           openVoiceModal();
         };
 
@@ -3029,8 +3155,12 @@
           isRecording = false;
           document.getElementById("mic-btn")?.classList.remove("pulse-mic", "bg-red-600");
           document.getElementById("mic-btn")?.classList.add("bg-blue-700");
+          document.getElementById("mic-ripple")?.classList.add("hidden");
+          document.getElementById("mic-status-badge")?.classList.add("hidden");
+          document.getElementById("audio-waveform-container")?.classList.add("hidden");
+
           const micLabel = document.getElementById("mic-label");
-          if (micLabel) micLabel.innerText = (currentLanguage === "en-IN") ? "🎙️ Tap Microphone to Speak Again" : "🎙️ మైక్ నొక్కి మాట్లాడండి";
+          if (micLabel) micLabel.innerText = pInfo.tapAgain;
           
           const finalSpoken = (currentPatient.selectedSymptom || sessionFinalTranscript || "").trim();
           if (finalSpoken && finalSpoken.length > 0) {
@@ -3174,10 +3304,10 @@
       let aiSuggestions = [];
       let activePrescription = [];
 
-            // 1. Ultra-Fast Sarvam-105B Triage Inference (2.5s Timeout for instant snappy UX)
+      // 1. Ultra-Fast Sarvam Conversational Triage Inference (6s Timeout for rich Indic AI)
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 2500);
+        const timeoutId = setTimeout(() => controller.abort(), 6000);
 
         const sarvamLlmRes = await fetch("/api/v1/ai/llm-proxy", {
           method: "POST",
@@ -3186,14 +3316,18 @@
             "Content-Type": "application/json"
           },
           body: JSON.stringify({
-            model: "sarvam-105b",
+            model: "sarvam-105b-conversations",
             messages: [
               {
+                role: "system",
+                content: "You are an expert physician clinical pharmacologist. Analyze patient symptoms. Respond ONLY with valid JSON with keys: english_translation, is_emergency (boolean), clinical_assessment, planSummary, dashavidha (object: prakriti, agni, koshtha, vikriti), aiSuggestions, activePrescription."
+              },
+              {
                 role: "user",
-                content: "You are an expert physician clinical pharmacologist. Analyze this patient symptom: '" + (currentPatient.selectedSymptom || "General health consultation") + "'. Return ONLY valid JSON with keys: english_translation, is_emergency (boolean), clinical_assessment, planSummary, dashavidha (object: prakriti, agni, koshtha, vikriti), aiSuggestions, activePrescription."
+                content: "Patient reported symptom: '" + (currentPatient.selectedSymptom || "General health consultation") + "'."
               }
             ],
-            max_tokens: 500,
+            max_tokens: 650,
             temperature: 0.1
           })
         });
@@ -3203,24 +3337,26 @@
           const sarvamData = await sarvamLlmRes.json();
           const rawMessage = sarvamData.choices && sarvamData.choices[0] && sarvamData.choices[0].message;
           let rawContent = rawMessage ? (rawMessage.content || "") : "";
-          if (rawContent.includes("```")) {
-            rawContent = rawContent.replace(/```json/gi, "").replace(/```/g, "").trim();
-          }
-          if (rawContent && rawContent.startsWith("{")) {
-            const content = JSON.parse(rawContent);
-            if (content.english_translation && content.english_translation.trim().length > 0) {
-              englishSymptom = content.english_translation.trim();
+          const jsonMatch = rawContent.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            try {
+              const content = JSON.parse(jsonMatch[0]);
+              if (content.english_translation && content.english_translation.trim().length > 0) {
+                englishSymptom = content.english_translation.trim();
+              }
+              isEmergency = (content.is_emergency === true || content.is_emergency === "true") || fallbackEmergency;
+              clinicalAssessment = content.clinical_assessment || "";
+              planSummary = content.planSummary || "";
+              if (content.dashavidha) dashavidha = content.dashavidha;
+              if (Array.isArray(content.aiSuggestions) && content.aiSuggestions.length > 0) aiSuggestions = content.aiSuggestions;
+              if (Array.isArray(content.activePrescription) && content.activePrescription.length > 0) activePrescription = content.activePrescription;
+            } catch (pErr) {
+              console.warn("JSON parsing error, falling back:", pErr);
             }
-            isEmergency = (content.is_emergency === true || content.is_emergency === "true") || fallbackEmergency;
-            clinicalAssessment = content.clinical_assessment || "";
-            planSummary = content.planSummary || "";
-            if (content.dashavidha) dashavidha = content.dashavidha;
-            if (Array.isArray(content.aiSuggestions) && content.aiSuggestions.length > 0) aiSuggestions = content.aiSuggestions;
-            if (Array.isArray(content.activePrescription) && content.activePrescription.length > 0) activePrescription = content.activePrescription;
           }
         }
       } catch (sarvamErr) {
-        console.log("Instant high-speed deterministic triage engaged (<100ms)");
+        console.log("High-speed deterministic clinical triage engaged (<100ms)");
         isEmergency = fallbackEmergency;
       }
 

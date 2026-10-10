@@ -11,7 +11,20 @@ export default async function handler(req, res) {
   if (!text) return res.status(400).json({ error: "Text is required" });
 
   const lang = language_code || "te-IN";
-  const speaker = ["te-IN", "ta-IN", "kn-IN"].includes(lang) ? "kavitha" : "priya";
+  const speakerMap = {
+    "te-IN": "kavitha",
+    "ta-IN": "kavitha",
+    "kn-IN": "kavitha",
+    "ml-IN": "kavitha",
+    "hi-IN": "priya",
+    "mr-IN": "priya",
+    "bn-IN": "priya",
+    "gu-IN": "priya",
+    "pa-IN": "priya",
+    "or-IN": "priya",
+    "en-IN": "priya"
+  };
+  const speaker = req.body.speaker || speakerMap[lang] || (["te-IN", "ta-IN", "kn-IN", "ml-IN"].includes(lang) ? "kavitha" : "priya");
   const SARVAM_API_KEY = process.env.SARVAM_API_KEY;
 
   try {

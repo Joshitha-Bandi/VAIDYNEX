@@ -27,7 +27,7 @@ export default async function handler(req, res) {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "sarvam-105b",
+        model: (req.body && req.body.model && req.body.model !== "sarvam-105b") ? req.body.model : "sarvam-105b-conversations",
         messages: finalMessages,
         temperature: temperature || 0.2,
         max_tokens: max_tokens || 1000

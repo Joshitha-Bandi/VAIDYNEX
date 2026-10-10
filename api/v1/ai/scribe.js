@@ -18,7 +18,7 @@ export default async function handler(req, res) {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "sarvam-105b",
+        model: "sarvam-105b-conversations",
         messages: [
           { role: "system", content: "You are an expert clinical scribe. Generate a brief clinical 'Plan' section based on the symptoms. Respond with ONLY the plan text." },
           { role: "user", content: `Symptoms: ${symptoms || 'General discomfort'}` }

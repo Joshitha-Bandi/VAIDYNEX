@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "description": "MediKiosk Sovereign AI Multimodal Clinical Intake Suite",
   "scripts": {
+    "start": "npx serve -l 3000 .",
+    "dev": "npx vercel dev",
     "build": "echo Build OK"
   },
   "dependencies": {
