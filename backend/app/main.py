@@ -80,6 +80,14 @@ async def admin_page():
 async def patient_page():
     return _serve_file("patient.html")
 
+@app.get("/favicon.ico")
+async def favicon():
+    return _serve_file("favicon.ico")
+
+@app.get("/supabase-client.js")
+async def supabase_js():
+    return _serve_file("supabase-client.js")
+
 @app.get("/api/health")
 async def health():
     return {
