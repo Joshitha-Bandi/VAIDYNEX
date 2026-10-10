@@ -8,7 +8,7 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).send('Method not allowed');
 
   const { symptoms, patient_id } = req.body;
-  const SARVAM_API_KEY = process.env.SARVAM_API_KEY;
+  const SARVAM_API_KEY = process.env.SARVAM_API_KEY || "sk_6cogtu4i_AUqyZ8eTmEBU4YvKyO6gYtCi";
 
   try {
     const response = await fetch("https://api.sarvam.ai/v1/chat/completions", {

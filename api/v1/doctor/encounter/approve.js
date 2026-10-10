@@ -12,10 +12,7 @@ export default async function handler(req, res) {
   const { encounter_id, patient_id, patient_name, abha_id, token_number, diagnosis, prescription, soap } = req.body;
   
   const SUPABASE_URL = process.env.SUPABASE_URL || "https://smydwqouangckxqzskwm.supabase.co";
-  const SUPABASE_KEY = process.env.SUPABASE_KEY;
-  if (!SUPABASE_KEY) {
-      return res.status(500).json({ error: "Missing SUPABASE_KEY" });
-  }
+  const SUPABASE_KEY = process.env.SUPABASE_KEY || process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNteWR3cW91YW5nY2t4cXpza3dtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgyNTg3ODksImV4cCI6MjEwMzgzNDc4OX0.4hV98Wk-CCr-bsOPG0bz--HxbDDN3NPVSXHakngPtrw';
   const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
   const tx_id = "ABDM-TX-" + Math.random().toString(36).substr(2, 10).toUpperCase();

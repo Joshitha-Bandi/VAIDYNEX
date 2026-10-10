@@ -17,7 +17,7 @@ export default async function handler(req, res) {
      ];
   }
 
-  const SARVAM_API_KEY = process.env.SARVAM_API_KEY;
+  const SARVAM_API_KEY = process.env.SARVAM_API_KEY || "sk_6cogtu4i_AUqyZ8eTmEBU4YvKyO6gYtCi";
 
   try {
     const response = await fetch("https://api.sarvam.ai/v1/chat/completions", {
