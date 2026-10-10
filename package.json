@@ -1,9 +1,14 @@
 {
   "name": "medikiosk-sih2026",
   "version": "1.0.0",
-  "type": "module",
   "description": "MediKiosk Sovereign AI Multimodal Clinical Intake Suite",
+  "scripts": {
+    "start": "npx serve -l 3000 .",
+    "dev": "npx vercel dev",
+    "build": "echo Build OK"
+  },
   "dependencies": {
-    "@supabase/supabase-js": "^2.109.0"
+    "@supabase/supabase-js": "^2.109.0",
+    "dotenv": "^17.4.2"
   }
 }
