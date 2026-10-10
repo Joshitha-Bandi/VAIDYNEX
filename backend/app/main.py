@@ -109,6 +109,8 @@ def _serve_file(filename: str):
     return HTMLResponse(f"<h1>VAIDYNEX - {filename}</h1>", status_code=404)
 
 @app.get("/")
+@app.get("/vaidynex")
+@app.get("/medikiosk")
 @app.get("/kiosk")
 @app.get("/index.html")
 async def root():

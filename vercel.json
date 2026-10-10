@@ -1,11 +1,13 @@
 {
   "cleanUrls": true,
   "rewrites": [
+    { "source": "/vaidynex", "destination": "/index.html" },
+    { "source": "/medikiosk", "destination": "/index.html" },
+    { "source": "/kiosk", "destination": "/index.html" },
     { "source": "/doctor", "destination": "/doctor.html" },
     { "source": "/triage", "destination": "/triage.html" },
     { "source": "/ayush", "destination": "/ayush.html" },
     { "source": "/admin", "destination": "/admin.html" },
-    { "source": "/patient", "destination": "/patient.html" },
-    { "source": "/kiosk", "destination": "/index.html" }
+    { "source": "/patient", "destination": "/patient.html" }
   ]
 }
