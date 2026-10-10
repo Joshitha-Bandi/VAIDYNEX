@@ -1,5 +1,8 @@
 # 🏥 VAIDYNEX — AI-Powered Patient Case-Taking Software
 ### *Smart India Hackathon (SIH 2026) | Problem Statement ID: 26047*
+> **Tagline:** Intelligent Care. Connected History.  
+> **Official Live Application:** [https://vaidynex-2026.vercel.app](https://vaidynex-2026.vercel.app)
+
 **Ministry/Department:** All India Institute of Ayurveda (AIIA), Ministry of Ayush  
 **Theme:** MedTech / HealthTech / BioTech • **Category:** Software  
 **Architecture:** 100% Serverless (Vercel Edge Functions + Supabase PostgreSQL + Sovereign Indic AI)
