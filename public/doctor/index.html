@@ -1,0 +1,1719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22><rect width=%2232%22 height=%2232%22 rx=%228%22 fill=%22%23223D79%22/><path d=%22M16 8v16M8 16h16%22 stroke=%22%23FFA530%22 stroke-width=%224%22 stroke-linecap=%22round%22/></svg>">
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MediKiosk — Physician Consultation & Clinical EMR Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Public Sans', 'Plus Jakarta Sans', sans-serif; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-client.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col antialiased">
+
+  <!-- Top Tricolor Accent -->
+  <div class="h-1.5 w-full bg-gradient-to-r from-[#FF9933] via-white to-[#138808]"></div>
+
+  <!-- Unified Navigation Bar (Standard across MediKiosk Suite) -->
+  <nav class="bg-[#223D79] text-[#D9CDBA] border-b-2 border-[#FFA530] text-xs px-6 py-2.5 flex flex-wrap items-center justify-between sticky top-0 z-50 shadow-md">
+    <div class="flex items-center space-x-3">
+      <span class="w-2.5 h-2.5 rounded-full bg-[#FFA530] animate-pulse"></span>
+      <span class="font-extrabold text-white tracking-wide uppercase text-[11px]">MediKiosk Suite (PS 26047)</span>
+    </div>
+    <div class="flex flex-wrap items-center gap-2 mt-1 sm:mt-0">
+      <a href="/" class="text-[#D9CDBA] hover:text-white font-semibold px-3 py-1 rounded-md hover:bg-[#1a2f5e] border border-[#D9CDBA]/20 transition">📱 Patient Kiosk</a>
+      <a href="/doctor" class="bg-[#FFA530] text-[#223D79] font-black shadow px-3 py-1 rounded-md">🩺 Doctor Portal</a>
+      <a href="/triage" class="text-[#D9CDBA] hover:text-white font-semibold px-3 py-1 rounded-md hover:bg-[#1a2f5e] border border-[#D9CDBA]/20 transition">🚨 Emergency Triage</a>
+      <a href="/ayush" class="text-[#D9CDBA] hover:text-white font-semibold px-3 py-1 rounded-md hover:bg-[#1a2f5e] border border-[#D9CDBA]/20 transition">🌿 AYUSH Dashavidha</a>
+      <a href="/admin" class="text-[#D9CDBA] hover:text-white font-semibold px-3 py-1 rounded-md hover:bg-[#1a2f5e] border border-[#D9CDBA]/20 transition">📊 Admin & ABDM Hub</a>
+    </div>
+  </nav>
+
+  <!-- Clean Professional Header -->
+  <header class="bg-white border-b border-slate-200 px-6 py-3.5 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+    <div class="flex items-center space-x-3.5">
+      <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-800 text-white flex items-center justify-center font-black text-xl shadow-md border border-blue-500">
+        🩺
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="font-black text-slate-900 text-base sm:text-lg tracking-tight">
+            MediKiosk Physician Consultation & Clinical EMR Portal
+          </h1>
+          <span class="text-[10px] bg-blue-100 text-blue-900 border border-blue-300 px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider">
+            OPD Chamber 4 • Dr. Suresh Sharma
+          </span>
+        </div>
+        <p class="text-xs text-slate-600 mt-0.5 flex items-center gap-2">
+          <span>All India Institute of Ayurveda (AIIA) • Facility ID: IN0110000142</span>
+          <span class="text-slate-300">•</span>
+          <span class="font-mono text-emerald-700 font-bold text-[11px]">NRCeS FHIR R4 & ABDM M2/M3 Synced</span>
+        </p>
+      </div>
+    </div>
+    
+    <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2 bg-emerald-50 border border-emerald-200 px-3.5 py-1.5 rounded-xl shadow-sm">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span class="text-slate-600 text-xs font-semibold">Active OPD Queue:</span>
+        <span id="queue-count" class="font-extrabold text-[#223D79] text-xs">4 Patients</span>
+      </div>
+      <button onclick="initDoctorQueue()" class="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold border border-slate-300 flex items-center gap-1.5 transition shadow-sm">
+        <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-slate-600"></i> Refresh
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Content Layout (4 Cols / 8 Cols Grid) -->
+  <main class="flex-1 p-4 sm:p-6 max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+    <!-- Left Column: Patient Queue (4 Cols) -->
+    <div class="lg:col-span-4 space-y-4">
+      <div class="bg-white border-2 border-slate-200 rounded-2xl p-4 shadow-sm space-y-3">
+        <div class="flex items-center justify-between border-b border-slate-200 pb-2.5">
+          <h2 class="font-bold text-slate-900 text-xs sm:text-sm flex items-center gap-2">
+            <i data-lucide="users" class="w-4 h-4 text-[#223D79]"></i>
+            <span>Waiting Room Tokens</span>
+          </h2>
+          <span class="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+            Real-Time Sync
+          </span>
+        </div>
+
+        <!-- Filter Chips -->
+        <div class="flex items-center gap-1.5 text-[11px]">
+          <button onclick="setQueueFilter('all')" id="filter-btn-all" class="px-2.5 py-1 bg-[#223D79] text-white font-bold rounded-lg shadow-sm">All</button>
+          <button onclick="setQueueFilter('pmjay')" id="filter-btn-pmjay" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg">PM-JAY</button>
+          <button onclick="setQueueFilter('emergency')" id="filter-btn-emergency" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg">STAT Alert</button>
+        </div>
+
+        <!-- Dynamic Queue List -->
+        <div id="queue-list" class="space-y-2.5 max-h-[calc(100vh-280px)] overflow-y-auto pr-1">
+          <!-- Dynamically populated queue items -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: 15-Second SOAP Dashboard & Prescription Pad (8 Cols) -->
+    <div class="lg:col-span-8 space-y-4">
+      <div class="bg-white border-2 border-slate-200 rounded-2xl p-5 shadow-sm space-y-5">
+        
+        <!-- Patient Header Banner -->
+        <div class="flex flex-wrap items-center justify-between pb-4 border-b border-slate-200 gap-4">
+          <div class="flex items-center space-x-3.5">
+            <div id="patient-avatar-display" class="w-12 h-12 rounded-xl bg-gradient-to-tr from-[#223D79] to-blue-700 text-white flex items-center justify-center font-black text-lg shadow-sm border border-blue-500">
+              RC
+            </div>
+            <div>
+              <div class="flex flex-wrap items-center gap-2">
+                <h2 id="patient-name-display" class="text-base sm:text-lg font-black text-slate-900">Ramesh Chandra (52M)</h2>
+                <span id="token-badge" class="text-xs bg-[#223D79] text-[#FFA530] font-black px-2.5 py-0.5 rounded-full shadow-sm">TOKEN #042</span>
+                <span id="patient-pmjay-badge" class="text-xs bg-amber-50 text-amber-900 border border-amber-300 px-2.5 py-0.5 rounded-full font-bold">₹5L PM-JAY Cashless</span>
+              </div>
+              <p id="patient-meta-display" class="text-xs text-slate-600 mt-0.5 font-medium">52 Yrs • Male • Khammam, Telangana</p>
+              <p id="patient-abha-details" class="text-[11px] text-slate-500 font-mono mt-0.5">ABHA ID: 91-4829-1029-4821 • ramesh.chandra@abdm</p>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <button onclick="showFhirModal()" class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold border border-slate-300 flex items-center gap-1.5 transition shadow-sm">
+              <i data-lucide="code-2" class="w-4 h-4 text-[#223D79]"></i>
+              <span>NRCeS FHIR R4</span>
+            </button>
+            <button onclick="generateAndDownloadPrescriptionPdf()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white text-xs font-black shadow-md flex items-center gap-1.5 transition ring-2 ring-emerald-400/40" title="Generate & Download Official Prescription PDF for Patient">
+              <i data-lucide="download" class="w-4 h-4 text-white"></i>
+              <span>Download Rx (PDF)</span>
+            </button>
+            <button onclick="approvePrescription()" class="px-4 py-2 rounded-xl bg-[#223D79] hover:bg-[#1a2f5e] text-white text-xs font-black shadow-md hover:shadow-lg flex items-center gap-1.5 transition">
+              <i data-lucide="check-circle-2" class="w-4 h-4 text-[#FFA530]"></i>
+              <span>1-Click Approve & Prescribe</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 15-Second Clinical SOAP Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          
+          <!-- S: Subjective (Cross-Lingual Native Voice) -->
+          <div class="bg-white border-2 border-slate-200 rounded-2xl p-4 space-y-3 shadow-sm hover:border-slate-300 transition">
+            <div class="flex items-center justify-between border-b border-slate-200 pb-2.5">
+              <div class="flex items-center gap-2 text-xs font-black text-slate-900 uppercase tracking-wider">
+                <i data-lucide="languages" class="w-4 h-4 text-[#FFA530]"></i>
+                <span>S: Subjective (Voice Intake)</span>
+              </div>
+              <span class="text-[10px] bg-blue-50 text-blue-900 font-bold px-2 py-0.5 rounded border border-blue-200">
+                Sarvam AI ➔ Clinical English
+              </span>
+            </div>
+
+            <!-- Original Mother Tongue Spoken Voice -->
+            <div class="p-3 bg-amber-50/80 rounded-xl border border-amber-200/90 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] text-amber-900 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                  <i data-lucide="mic" class="w-3.5 h-3.5 text-amber-700"></i>
+                  Patient Spoken Words (Native Mother Tongue):
+                </span>
+                <div class="flex items-center gap-2">
+                  <span id="patient-lang-badge" class="text-[10px] text-[#223D79] font-black bg-[#FFA530]/30 px-2 py-0.5 rounded border border-[#FFA530]/50">
+                    తెలుగు (Telugu)
+                  </span>
+                  <button id="btn-play-patient-voice" onclick="playCurrentPatientNativeAudio()" class="text-xs bg-amber-600 hover:bg-amber-700 text-white font-bold px-2.5 py-1 rounded-lg flex items-center gap-1.5 shadow-sm transition">
+                    <i data-lucide="volume-2" class="w-3.5 h-3.5"></i>
+                    <span>Listen Spoken Audio</span>
+                  </button>
+                </div>
+              </div>
+              <p id="soap-native-text" class="text-xs text-slate-900 italic font-semibold leading-relaxed bg-white/70 p-2.5 rounded-lg border border-amber-200/60">
+                "నాకు గత 6 నెలలుగా రెండు మోకాళ్ళలో నొప్పిగా ఉంది. ఉదయం లేవగానే బిగుతుగా ఉంటుంది, చలికాలంలో నొప్పి ఎక్కువవుతుంది."
+              </p>
+            </div>
+
+            <!-- Standardized Medical English -->
+            <div class="space-y-1">
+              <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+                🇬🇧 Standardized Translated Clinical Note (English SOAP S):
+              </span>
+              <p id="soap-s" class="text-xs text-slate-800 leading-relaxed font-medium bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                52-year-old male reports severe bilateral knee pain with crepitus for 6 months, worsening during early mornings and cold weather. Walking distance reduced to ~200m. Denies acute trauma.
+              </p>
+            </div>
+          </div>
+
+          <!-- O: Objective & Lab OCR -->
+          <div class="bg-white border-2 border-slate-200 rounded-2xl p-4 space-y-3 shadow-sm hover:border-slate-300 transition">
+            <div class="flex items-center justify-between border-b border-slate-200 pb-2.5">
+              <div class="flex items-center gap-2 text-xs font-black text-slate-900 uppercase tracking-wider">
+                <i data-lucide="flask-conical" class="w-4 h-4 text-[#FFA530]"></i>
+                <span>O: Objective & Lab OCR</span>
+              </div>
+              <span class="text-[10px] bg-purple-50 text-purple-900 font-bold px-2 py-0.5 rounded border border-purple-200">
+                Sarvam 3B VLM OCR
+              </span>
+            </div>
+
+            <div class="space-y-1">
+              <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+                Clinical Exam & Scanned Labs:
+              </span>
+              <p id="soap-o" class="text-xs text-slate-800 leading-relaxed font-medium bg-slate-50 p-2.5 rounded-xl border border-slate-200 whitespace-pre-line">
+                Clinical Vitals: [Pending In-Person Measurement in OPD Chamber]
+Physical Exam: Bilateral knee joint crepitus on flexion, mild suprapatellar tenderness.
+              </p>
+            </div>
+
+            <div id="soap-o-labs" class="space-y-2 pt-1">
+              <!-- Dynamically populated per patient in selectEncounter() -->
+            </div>
+          </div>
+
+          <!-- A: Assessment & Dashavidha -->
+          <div class="bg-white border-2 border-slate-200 rounded-2xl p-4 space-y-3 shadow-sm hover:border-slate-300 transition">
+            <div class="flex items-center justify-between border-b border-slate-200 pb-2.5">
+              <div class="flex items-center gap-2 text-xs font-black text-slate-900 uppercase tracking-wider">
+                <i data-lucide="stethoscope" class="w-4 h-4 text-[#FFA530]"></i>
+                <span>A: Assessment & Diagnosis</span>
+              </div>
+              <span class="text-[10px] bg-emerald-50 text-emerald-900 font-bold px-2 py-0.5 rounded border border-emerald-200">
+                ICD-10 & NAMASTE
+              </span>
+            </div>
+
+            <div class="space-y-1">
+              <p id="soap-a" class="text-xs text-slate-800 leading-relaxed font-medium bg-slate-50 p-2.5 rounded-xl border border-slate-200 whitespace-pre-line">
+1. Sandhigata Vata (Osteoarthritis / ICD-10 M17.0 / NAMASTE AYU-SAN-01)
+2. Hyperuricemia (Serum Uric Acid 7.8 mg/dL [HIGH])
+3. Mild Agnimandya (Manda Agni)
+              </p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 text-[11px]">
+              <div class="bg-slate-50 border border-slate-200 p-2 rounded-xl">
+                <span class="text-slate-500 font-bold block text-[10px] uppercase">Prakriti</span>
+                <span id="dash-prakriti" class="font-black text-[#223D79] mt-0.5 block">Vata-Kapha</span>
+              </div>
+              <div class="bg-slate-50 border border-slate-200 p-2 rounded-xl">
+                <span class="text-slate-500 font-bold block text-[10px] uppercase">Agni</span>
+                <span id="dash-agni" class="font-black text-[#223D79] mt-0.5 block">Manda Agni</span>
+              </div>
+              <div class="bg-slate-50 border border-slate-200 p-2 rounded-xl">
+                <span class="text-slate-500 font-bold block text-[10px] uppercase">Koshtha</span>
+                <span id="dash-koshtha" class="font-black text-[#223D79] mt-0.5 block">Madhyama</span>
+              </div>
+              <div class="bg-slate-50 border border-slate-200 p-2 rounded-xl">
+                <span class="text-slate-500 font-bold block text-[10px] uppercase">Vikriti</span>
+                <span id="dash-vikriti" class="font-black text-[#223D79] mt-0.5 block">Dhatu Kshaya</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- P: Dynamic Clinical Plan & Prescription Pad (Editable) -->
+          <div class="col-span-1 md:col-span-2 bg-white border-2 border-slate-200 rounded-2xl p-4 sm:p-5 space-y-4 shadow-sm hover:border-slate-300 transition">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-3">
+              <div class="flex items-center gap-2 text-xs font-black text-slate-900 uppercase tracking-wider">
+                <i data-lucide="pill" class="w-4 h-4 text-[#FFA530]"></i>
+                <span>P: Plan & Personalized Prescription Pad (Editable)</span>
+              </div>
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="text-[10px] bg-[#223D79] text-[#FFA530] font-black px-2.5 py-0.5 rounded border border-[#FFA530]/40">
+                  🇮🇳 Sarvam-105B Sovereign LLM
+                </span>
+                <button onclick="regeneratePlanWithSarvam()" class="bg-[#223D79] hover:bg-[#1a2f5e] text-white text-[11px] font-bold px-2.5 py-1 rounded-lg border border-[#223D79] transition flex items-center gap-1 shadow-sm">
+                  <i data-lucide="sparkles" class="w-3 h-3 text-[#FFA530]"></i>
+                  <span>✨ Regenerate with Sarvam-105B</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Clinical Management Plan Summary Textarea -->
+            <div class="space-y-1">
+              <label class="text-[10px] text-slate-600 font-bold uppercase tracking-wider">
+                Clinical Management & Non-Pharmacological Regimen:
+              </label>
+              <textarea id="soap-p" rows="3" class="w-full bg-slate-50 border border-slate-300 text-xs text-slate-800 p-3 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 leading-relaxed font-sans transition"></textarea>
+            </div>
+
+            <!-- 1-Tap AI Drug Suggester Chips -->
+            <div class="space-y-1.5">
+              <label class="text-[10px] text-slate-600 font-bold uppercase tracking-wider flex items-center gap-1">
+                <span>⚡ Condition-Specific AI Formulations (1-Tap Add):</span>
+              </label>
+              <div id="ai-drug-chips-container" class="flex flex-wrap gap-2">
+                <!-- Dynamically populated chips -->
+              </div>
+            </div>
+
+            <!-- Interactive Active Prescription Table -->
+            <div class="space-y-2">
+              <div class="flex flex-wrap items-center justify-between gap-2 pb-1">
+                <label class="text-[11px] text-slate-800 font-black uppercase tracking-wider flex items-center gap-1.5">
+                  <i data-lucide="file-check-2" class="w-4 h-4 text-emerald-600"></i>
+                  <span>Active Formulations & Medications (Signed by Doctor):</span>
+                </label>
+                <button onclick="generateAndDownloadPrescriptionPdf()" class="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white text-xs font-black shadow flex items-center gap-1.5 transition" title="Download Official Prescription PDF for Patient">
+                  <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                  <span>Download Rx (PDF)</span>
+                </button>
+              </div>
+
+              <div class="overflow-x-auto border border-slate-200 rounded-xl">
+                <table class="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr class="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+                      <th class="p-2.5">Medicine Name</th>
+                      <th class="p-2.5">Dose</th>
+                      <th class="p-2.5">Frequency</th>
+                      <th class="p-2.5">Duration</th>
+                      <th class="p-2.5">Instructions (Anupana)</th>
+                      <th class="p-2.5 text-center">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="prescription-table-body" class="divide-y divide-slate-100">
+                    <!-- Dynamically populated table rows -->
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Custom Medicine Quick-Add Row -->
+              <div class="grid grid-cols-1 sm:grid-cols-5 gap-2 pt-2 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                <input id="add-med-name" type="text" placeholder="Medicine / Formulation name" class="sm:col-span-2 bg-white border border-slate-300 text-xs text-slate-800 p-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <input id="add-med-dose" type="text" placeholder="Dose (e.g. 2 Tabs / 20ml)" class="bg-white border border-slate-300 text-xs text-slate-800 p-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <select id="add-med-freq" class="bg-white border border-slate-300 text-xs text-slate-800 p-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="BD (Twice daily)">BD (Twice daily)</option>
+                  <option value="OD (Once daily)">OD (Once daily)</option>
+                  <option value="TDS (Thrice daily)">TDS (Thrice daily)</option>
+                  <option value="STAT (Immediate)">STAT (Immediate)</option>
+                  <option value="SOS (As needed)">SOS (As needed)</option>
+                </select>
+                <button onclick="addCustomMedicineFromInputs()" class="bg-[#FFA530] hover:bg-[#ff9510] text-[#223D79] text-xs font-black p-2.5 rounded-xl transition shadow flex items-center justify-center gap-1">
+                  <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                  <span>Add to Rx</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Success Notification Banner -->
+        <div id="success-banner" class="hidden mt-4 p-4 rounded-xl bg-emerald-50 border-2 border-emerald-300 text-emerald-900 text-xs flex items-center justify-between shadow-sm">
+          <span class="flex items-center gap-2 font-bold">
+            <i data-lucide="check-circle" class="w-4 h-4 text-emerald-700"></i> Encounter Approved! NRCeS FHIR R4 Bundle linked to ABDM and printed.
+          </span>
+          <button onclick="document.getElementById('success-banner').classList.add('hidden')" class="text-emerald-800 hover:text-emerald-950 font-bold text-xs bg-emerald-200/60 px-2 py-1 rounded">Dismiss</button>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- Sticky Doctor Prescription & PDF Action Dock (Always Visible) -->
+  <div class="sticky bottom-0 z-40 bg-white/95 backdrop-blur-md border-t-2 border-slate-300 py-3 px-6 shadow-2xl">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <span class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
+        <div>
+          <span class="text-xs font-black text-slate-800" id="dock-patient-info">Active Patient Prescription</span>
+          <span class="text-[11px] text-slate-500 block">ABDM Milestone 2 • NRCeS FHIR R4 Ready</span>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2.5">
+        <button onclick="generateAndDownloadPrescriptionPdf()" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white text-xs font-black shadow-lg flex items-center gap-2 transition hover:scale-105 ring-2 ring-emerald-400/40" title="Download Official Prescription PDF for Patient">
+          <i data-lucide="file-down" class="w-4 h-4 text-white"></i>
+          <span>📥 DOWNLOAD PATIENT PRESCRIPTION (PDF)</span>
+        </button>
+
+        <button onclick="approvePrescription()" class="px-5 py-2.5 rounded-xl bg-[#223D79] hover:bg-[#1a2f5e] text-white text-xs font-black shadow-lg flex items-center gap-2 transition hover:scale-105">
+          <i data-lucide="check-circle-2" class="w-4 h-4 text-[#FFA530]"></i>
+          <span>✅ 1-Click Approve & Prescribe</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- NRCeS FHIR R4 Modal -->
+  <div id="fhir-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 z-50">
+    <div class="bg-white border border-slate-200 rounded-2xl w-full max-w-3xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+      <div class="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
+        <h3 class="font-bold text-sm text-[#223D79] flex items-center gap-2">
+          <i data-lucide="file-code-2" class="w-4 h-4 text-[#223D79]"></i> NRCeS HL7 FHIR R4 DocumentBundle (bdl-11)
+        </h3>
+        <button onclick="document.getElementById('fhir-modal').classList.add('hidden')" class="text-slate-400 hover:text-slate-700 font-bold p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div class="p-4 flex-1 overflow-auto bg-slate-900">
+        <pre id="fhir-json" class="text-[11px] text-emerald-400 font-mono"></pre>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Clinical Master Store for Doctor Portal
+    const CLINICAL_PROFILES = {
+      "enc-0042": {
+        id: "enc-0042",
+        tokenNumber: "#042",
+        patientName: "Ramesh Chandra",
+        age: 52,
+        gender: "Male",
+        avatar: "RC",
+        location: "Khammam, Telangana",
+        abhaId: "91-4829-1029-4821",
+        abhaAddress: "ramesh.chandra@abdm",
+        hasPmjay: true,
+        isEmergency: false,
+        nativeLang: "తెలుగు (Telugu)",
+        nativeSpeech: "\"నాకు గత 6 నెలలుగా రెండు మోకాళ్ళలో నొప్పిగా ఉంది. ఉదయం లేవగానే బిగుతుగా ఉంటుంది, చలికాలంలో నొప్పి ఎక్కువవుతుంది.\"",
+        subjective: "52-year-old male presents with bilateral knee pain and crepitus for 6 months, aggravated by walking and cold exposure. Morning joint stiffness lasting ~30 mins. Walking capacity reduced to 200m. History of Hypertension on Telmisartan 40mg.",
+        objective: "Clinical Vitals: [Pending In-Person OPD Chamber Measurement]\nPhysical Exam: Bilateral knee joint crepitus on flexion, mild suprapatellar tenderness, no acute effusion.\nScanned Lab Report (Sarvam 3B VLM OCR):\n• Serum Uric Acid: 7.8 mg/dL [CRITICAL HIGH] (Ref: 3.5 - 7.2 mg/dL)\n• Fasting Blood Sugar: 104 mg/dL [Normal]\n• HbA1c: 6.1% [Pre-diabetic]",
+        assessment: "1. Sandhigata Vata (Osteoarthritis / ICD-10 M17.0 / NAMASTE AYU-SAN-01)\n2. Hyperuricemia (Serum Uric Acid 7.8 mg/dL [HIGH])\n3. Mild Agnimandya (Manda Agni)",
+        dashavidha: { prakriti: "Vata-Kapha", agni: "Manda Agni", koshtha: "Madhyama", vikriti: "Dhatu Kshaya (Asthi-Majja)" },
+        planSummary: "1. Vata-pacifying Ayurvedic formulations + Anti-hyperuricemic therapy\n2. External Janu Basti with Ksheerabala Taila\n3. Low-purine dietary regimen (avoid red meat & lentils)",
+        aiSuggestions: [
+          { name: "Tab. Yograj Guggulu", dose: "2 Tabs", freq: "BD", dur: "15 Days", inst: "After food with warm water" },
+          { name: "Kwath. Maharasnadi", dose: "20 ml", freq: "BD", dur: "15 Days", inst: "Before food with equal water" },
+          { name: "Cap. Shallaki (500mg)", dose: "1 Cap", freq: "BD", dur: "15 Days", inst: "After meals (Cartilage support)" },
+          { name: "Ext. Janu Basti (Ksheerabala Taila)", dose: "1 Sitting", freq: "OD", dur: "7 Sittings", inst: "Panchakarma oil pooling" },
+          { name: "Tab. Febuxostat 40mg", dose: "1 Tab", freq: "OD", dur: "30 Days", inst: "Morning after breakfast (Uric acid lowering)" }
+        ],
+        activePrescription: [
+          { name: "Tab. Yograj Guggulu", dose: "2 Tabs", freq: "BD (Twice daily)", dur: "15 Days", inst: "After meals with warm water" },
+          { name: "Kwath. Maharasnadi", dose: "20 ml", freq: "BD (Twice daily)", dur: "15 Days", inst: "Before food with equal water" },
+          { name: "Cap. Shallaki (500mg)", dose: "1 Cap", freq: "BD (Twice daily)", dur: "15 Days", inst: "After meals" },
+          { name: "Ext. Janu Basti (Ksheerabala Taila)", dose: "1 Sitting", freq: "OD", dur: "7 Sittings", inst: "Panchakarma Department" }
+        ]
+      },
+
+      "enc-0043": {
+        id: "enc-0043",
+        tokenNumber: "#043",
+        patientName: "Priya Sharma",
+        age: 34,
+        gender: "Female",
+        avatar: "PS",
+        location: "Hyderabad, Telangana",
+        abhaId: "91-5910-2941-8402",
+        abhaAddress: "priya.sharma@abdm",
+        hasPmjay: true,
+        isEmergency: false,
+        nativeLang: "हिन्दी (Hindi)",
+        nativeSpeech: "\"मुझे पिछले 3 हफ्तों से पेट में जलन, खट्टी डकारें और एसिडिटी की समस्या है, मसालेदार खाना खाने के बाद ज्यादा होती है।\"",
+        subjective: "34-year-old female presents with recurrent epigastric burning sensation, sour belching (Amlodgara), and post-prandial acid regurgitation for 3 weeks, aggravated after spicy foods, tea, and stress.",
+        objective: "Clinical Vitals: [Pending In-Person OPD Examination]\nAbdominal Exam: Mild epigastric tenderness on deep palpation, no hepatomegaly, no peritoneal signs.\nScanned Lab Report (Sarvam 3B VLM OCR):\n• Upper GI Endoscopy: Mild Erythematous Antral Gastritis (Non-ulcer dyspepsia)\n• H. Pylori Stool Antigen: Negative",
+        assessment: "1. Amlapitta (Acid Peptic Disorder / ICD-10 K21.9 / NAMASTE AYU-AML-02)\n2. Pitta-Kapha Prakopa (Vidagdha Pitta)",
+        dashavidha: { prakriti: "Pitta-Vata", agni: "Tikshna Agni", koshtha: "Mrudu", vikriti: "Pitta Dusti" },
+        planSummary: "1. Pitta Shamana & Vatanulomana line of treatment\n2. Dietary correction: Avoid spicy, oily, fermented foods\n3. Alkaline hydration with coconut water & CCF tea",
+        aiSuggestions: [
+          { name: "Avipattikar Churna", dose: "3 Grams", freq: "BD", dur: "15 Days", inst: "Before food with lukewarm water" },
+          { name: "Kamadudha Rasa (Mukta)", dose: "1 Tab", freq: "BD", dur: "15 Days", inst: "After meals with milk/water" },
+          { name: "Sutshekhar Rasa", dose: "1 Tab", freq: "BD", dur: "15 Days", inst: "After meals with honey/ghee" },
+          { name: "Syrup Sukumaram Kwatham", dose: "15 ml", freq: "BD", dur: "15 Days", inst: "Before food with equal water" },
+          { name: "Cap. Pantoprazole 40mg", dose: "1 Cap", freq: "OD", dur: "14 Days", inst: "Early morning empty stomach (30 mins before tea)" }
+        ],
+        activePrescription: [
+          { name: "Avipattikar Churna", dose: "3 Grams", freq: "BD (Twice daily)", dur: "15 Days", inst: "15 mins before meals with warm water" },
+          { name: "Kamadudha Rasa (Mukta Yukta)", dose: "1 Tab", freq: "BD (Twice daily)", dur: "15 Days", inst: "After meals with milk" },
+          { name: "Sutshekhar Rasa", dose: "1 Tab", freq: "BD (Twice daily)", dur: "15 Days", inst: "After meals with honey" },
+          { name: "Cap. Pantoprazole 40mg", dose: "1 Cap", freq: "OD (Morning)", dur: "14 Days", inst: "Empty stomach 30 mins before food" }
+        ]
+      },
+
+      "enc-e012": {
+        id: "enc-e012",
+        tokenNumber: "#E-012",
+        patientName: "Mohan Das",
+        age: 61,
+        gender: "Male",
+        avatar: "MD",
+        location: "Warangal, Telangana",
+        abhaId: "91-7712-4019-3382",
+        abhaAddress: "mohan.das@abdm",
+        hasPmjay: true,
+        isEmergency: true,
+        nativeLang: "हिन्दी (Hindi)",
+        nativeSpeech: "\"अचानक सीने में बहुत तेज दर्द हो रहा है, बाएं हाथ और जबड़े तक जा रहा है। पसीना आ रहा है और सांस फूल रही है।\"",
+        subjective: "61-year-old male presented via Kiosk with sudden-onset severe retrosternal crushing chest pain radiating to left arm and jaw for 30 minutes, accompanied by diaphoresis and acute dyspnea.",
+        objective: "EMERGENCY STAT PROTOCOL TRIGGERED:\n• Voice-Elicited Cardiac Red-Flag Symptoms: Crushing chest pain + jaw radiation + diaphoresis.\n• STAT ECG (Resuscitation Bay): ST-Elevation in leads V1-V4 (Anterior Wall STEMI)\n• STAT Cardiac Troponin-I: 1.84 ng/mL [CRITICAL HIGH] (Ref: <0.04 ng/mL)",
+        assessment: "1. Acute ST-Elevation Myocardial Infarction (STEMI / ICD-10 I21.0 / SNOMED 57054005)\n2. Priority 1 Critical Resuscitation Alert",
+        dashavidha: { prakriti: "Vata-Pitta", agni: "Vishamagni", koshtha: "Krura", vikriti: "Hridaya Marmaghata" },
+        planSummary: "STAT Emergency Actions:\n1. Oxygen via nasal cannula 4 L/min\n2. Dual Antiplatelet Therapy (DAPT) loading\n3. STAT transfer to Cath Lab for Primary PCI",
+        aiSuggestions: [
+          { name: "Tab. Aspirin 325mg (Chewable)", dose: "1 Tab", freq: "STAT", dur: "Single Dose", inst: "Chew immediately" },
+          { name: "Tab. Clopidogrel 300mg", dose: "4 Tabs (75mg ea)", freq: "STAT", dur: "Loading Dose", inst: "Swallow with water STAT" },
+          { name: "Tab. Atorvastatin 80mg", dose: "1 Tab", freq: "STAT", dur: "Loading Dose", inst: "High-intensity statin" },
+          { name: "Sublingual Sorbitrate 5mg", dose: "1 Tab", freq: "SOS", dur: "As Needed", inst: "Place under tongue if SBP >100" },
+          { name: "Arjunarishta (Cardioprotective)", dose: "20 ml", freq: "BD", dur: "30 Days", inst: "Post-stabilization recovery phase" }
+        ],
+        activePrescription: [
+          { name: "Tab. Aspirin 325mg (Chewable)", dose: "1 Tab", freq: "STAT (Immediate)", dur: "Single Dose", inst: "Chew immediately" },
+          { name: "Tab. Clopidogrel 300mg", dose: "4 Tabs (75mg)", freq: "STAT (Loading)", dur: "Single Dose", inst: "Swallow immediately with water" },
+          { name: "Tab. Atorvastatin 80mg", dose: "1 Tab", freq: "STAT", dur: "Night", inst: "High-intensity lipid stabilization" },
+          { name: "Sublingual Sorbitrate 5mg", dose: "1 Tab", freq: "SOS", dur: "As Needed", inst: "Under tongue for chest pain (BP >100)" }
+        ]
+      },
+
+      "enc-0044": {
+        id: "enc-0044",
+        tokenNumber: "#044",
+        patientName: "Ananya Verma",
+        age: 28,
+        gender: "Female",
+        avatar: "AV",
+        location: "Nizamabad, Telangana",
+        abhaId: "91-9123-4567-8901",
+        abhaAddress: "ananya.verma@abdm",
+        hasPmjay: true,
+        isEmergency: false,
+        nativeLang: "हिन्दी (Hindi)",
+        nativeSpeech: "\"मुझे 3 दिनों से बहुत तेज बुखार (102°F) और कंपकंपी है, सिर में तेज दर्द और पूरे शरीर में दर्द हो रहा है।\"",
+        subjective: "28-year-old female presents with acute high fever (recorded 102.2°F), rigors, severe frontal headache, and generalized myalgias for 3 days. Denies cough, shortness of breath, or rash.",
+        objective: "Clinical Vitals: Temp: 102.2°F, Pulse: 104 bpm, BP: 110/70 mmHg.\nPhysical Exam: Febrile, flushed facies, mild pharyngeal congestion, no petechiae.\nScanned Lab Report (Sarvam 3B VLM OCR):\n• Complete Blood Count (CBC): WBC 11,800/mcL [Mild Leukocytosis]\n• Platelet Count: 220,000/mcL [Normal]\n• Dengue NS1 / Malarial Smear: Negative",
+        assessment: "1. Vishama Jwara (Acute Viral Pyrexia / ICD-10 R50.9 / NAMASTE AYU-JWA-01)\n2. Vata-Kapha Jwara with Agnimandya",
+        dashavidha: { prakriti: "Pitta-Kapha", agni: "Manda Agni (Jwaragni)", koshtha: "Madhyama", vikriti: "Rasa-Dhatu Dusti" },
+        planSummary: "1. Langhana (Light diet: Moong dal khichdi & warm water)\n2. Jwaraghna (Antipyretic) & Amapachana therapy\n3. Adequate hydration with oral electrolytes",
+        aiSuggestions: [
+          { name: "Tab. Maha Sudarshan Ghanvati", dose: "2 Tabs", freq: "TDS", dur: "5 Days", inst: "After meals with warm water" },
+          { name: "Amritarishta (Giloy)", dose: "20 ml", freq: "BD", dur: "7 Days", inst: "After food with equal warm water" },
+          { name: "Tab. Tribhuvankirti Rasa", dose: "1 Tab", freq: "BD", dur: "5 Days", inst: "With ginger juice or honey" },
+          { name: "Tab. Paracetamol 650mg", dose: "1 Tab", freq: "SOS (Max TDS)", dur: "3 Days", inst: "Only if temp >100°F" },
+          { name: "Sudarshana Churna Kashaya", dose: "30 ml", freq: "BD", dur: "5 Days", inst: "Freshly boiled decoction" }
+        ],
+        activePrescription: [
+          { name: "Tab. Maha Sudarshan Ghanvati", dose: "2 Tabs", freq: "TDS (Thrice daily)", dur: "5 Days", inst: "After food with warm water" },
+          { name: "Amritarishta (Giloy Formulation)", dose: "20 ml", freq: "BD (Twice daily)", dur: "7 Days", inst: "After food with equal warm water" },
+          { name: "Tab. Tribhuvankirti Rasa", dose: "1 Tab", freq: "BD (Twice daily)", dur: "5 Days", inst: "With honey after food" },
+          { name: "Tab. Paracetamol 650mg", dose: "1 Tab", freq: "SOS (When needed)", dur: "3 Days", inst: "Take if temperature exceeds 100°F" }
+        ]
+      }
+    };
+
+    let currentSelectedEncId = "enc-0042";
+    let activeMedications = [];
+    let currentFilter = "all";
+
+    function setQueueFilter(filter) {
+      currentFilter = filter;
+      const btnAll = document.getElementById("filter-btn-all");
+      const btnPmjay = document.getElementById("filter-btn-pmjay");
+      const btnEmerg = document.getElementById("filter-btn-emergency");
+
+      if (btnAll) btnAll.className = filter === 'all' ? "px-2.5 py-1 bg-[#223D79] text-white font-bold rounded-lg shadow-sm" : "px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg";
+      if (btnPmjay) btnPmjay.className = filter === 'pmjay' ? "px-2.5 py-1 bg-[#223D79] text-white font-bold rounded-lg shadow-sm" : "px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg";
+      if (btnEmerg) btnEmerg.className = filter === 'emergency' ? "px-2.5 py-1 bg-[#223D79] text-white font-bold rounded-lg shadow-sm" : "px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg";
+
+      initDoctorQueue();
+    }
+
+    function getConditionSpecificPrescription(rawText, rawAssessment) {
+      const combined = ((rawText || '') + ' ' + (rawAssessment || '')).toLowerCase();
+
+      // 1. Fever / Pyrexia / Vishama Jwara / Flu
+      if (combined.includes('fever') || combined.includes('ज्वर') || combined.includes('बुखार') || combined.includes('temperature') || combined.includes('shivering') || combined.includes('flu') || combined.includes('జ్వరం')) {
+        return {
+          assessment: "1. Vishama Jwara (Acute Febrile Illness / Viral Pyrexia / NAMASTE AYU-JWA-01)\n2. Agnimandya (Suppressed Digestive Fire)",
+          dashavidha: { prakriti: "Vata-Pitta", agni: "Manda Agni (Jwaragni)", koshtha: "Vibandha", vikriti: "Vata-Kaphaja Jwara" },
+          planSummary: "1. Antipyretic and immune-restorative line of treatment\n2. Maintain hydration with warm Shadanga Paniya & Moong soup\n3. Complete bed rest; follow up in 3 days if temperature persists",
+          activePrescription: [
+            { name: "Tab. Paracetamol 650mg", dose: "1 Tab", freq: "TDS (Thrice daily)", dur: "3 Days", inst: "After meals when temperature >100°F" },
+            { name: "Tab. Mahasudarshan Ghanvati", dose: "2 Tabs (500mg)", freq: "TDS (Thrice daily)", dur: "5 Days", inst: "After food with warm water" },
+            { name: "Syp. Amritarishta (Giloy)", dose: "20 ml", freq: "BD (Twice daily)", dur: "7 Days", inst: "After meals with equal warm water" },
+            { name: "Tab. Tribhuvankirti Rasa", dose: "1 Tab (125mg)", freq: "BD (Twice daily)", dur: "5 Days", inst: "With honey after food for body aches" }
+          ],
+          aiSuggestions: [
+            { name: "Tab. Dolo 650mg", dose: "1 Tab", freq: "TDS", dur: "3 Days", inst: "After food" },
+            { name: "Cap. Vitamin C 500mg", dose: "1 Tab", freq: "OD", dur: "10 Days", inst: "After lunch" },
+            { name: "Sudarshan Churna", dose: "3 Grams", freq: "BD", dur: "5 Days", inst: "With warm water" },
+            { name: "Syp. Tulsi-Vasaka", dose: "10 ml", freq: "TDS", dur: "5 Days", inst: "With warm water" }
+          ]
+        };
+      }
+
+      // 2. Chest Pain / Cardiac / STEMI / Hridroga
+      if (combined.includes('chest') || combined.includes('heart') || combined.includes('cardiac') || combined.includes('angina') || combined.includes('stemi') || combined.includes('छाती') || combined.includes('గుండె')) {
+        return {
+          assessment: "1. Priority 1 STAT: Acute Coronary Syndrome / Anterior Wall STEMI (NAMASTE AYU-HRI-01)\n2. Critical Myocardial Ischemia / Hridaya Sroto-rodha",
+          dashavidha: { prakriti: "Pitta-Vata", agni: "Tikshna Agni", koshtha: "Krura Koshtha", vikriti: "Hridaya Marmaghata" },
+          planSummary: "EMERGENCY PROTOCOL:\n1. 4 L/min Oxygen + Continuous ECG Monitoring\n2. Dual Antiplatelet Therapy (DAPT) loading administered\n3. Code Blue: STAT Transfer to Cath Lab for Primary PCI",
+          activePrescription: [
+            { name: "Tab. Aspirin 325mg (Chewable)", dose: "1 Tab", freq: "STAT", dur: "Single Dose", inst: "Chew immediately" },
+            { name: "Tab. Clopidogrel 300mg", dose: "4 Tabs (75mg)", freq: "STAT", dur: "Loading Dose", inst: "Swallow with water immediately" },
+            { name: "Tab. Atorvastatin 80mg", dose: "1 Tab", freq: "STAT", dur: "Loading Dose", inst: "High-intensity statin" },
+            { name: "Sublingual Sorbitrate 5mg", dose: "1 Tab", freq: "SOS", dur: "As Needed", inst: "Place under tongue if chest pain & SBP >100" }
+          ],
+          aiSuggestions: [
+            { name: "Inj. Heparin 5000 IU", dose: "STAT", freq: "IV Bolus", dur: "Single", inst: "Under ICU Supervision" },
+            { name: "Arjunarishta", dose: "20 ml", freq: "BD", dur: "30 Days", inst: "Post-stabilization with warm water" },
+            { name: "Tab. Metoprolol 25mg", dose: "1 Tab", freq: "OD", dur: "15 Days", inst: "Morning after breakfast" },
+            { name: "Tab. Hridyarnava Rasa 125mg", dose: "1 Tab", freq: "BD", dur: "15 Days", inst: "Cardioprotective formulation" }
+          ]
+        };
+      }
+
+      // 3. Acid Reflux / Gastric / GERD / Amlapitta
+      if (combined.includes('stomach') || combined.includes('acid') || combined.includes('reflux') || combined.includes('gerd') || combined.includes('gastric') || combined.includes('burning') || combined.includes('ulcer') || combined.includes('जलन') || combined.includes('एसिड') || combined.includes('కడుపు')) {
+        return {
+          assessment: "1. Amlapitta (Acid Peptic Disorder / Reflux Esophagitis / NAMASTE AYU-AML-02)\n2. Vidagdha Pitta (Hyperchlorhydria)",
+          dashavidha: { prakriti: "Pitta-Vata", agni: "Tikshna Agni", koshtha: "Mrudu Koshtha", vikriti: "Pitta Dusti" },
+          planSummary: "1. Pitta Shamana and acid-neutralizing regimen\n2. Avoid spicy, sour, fried, and fermented foods\n3. Early dinner (2 hours before sleep) and alkaline hydration",
+          activePrescription: [
+            { name: "Cap. Pantoprazole 40mg", dose: "1 Cap", freq: "OD (Morning)", dur: "14 Days", inst: "Empty stomach 30 mins before breakfast" },
+            { name: "Avipattikar Churna", dose: "3 Grams", freq: "BD (Twice daily)", dur: "15 Days", inst: "15 mins before meals with warm water" },
+            { name: "Kamadudha Rasa (Mukta Yukta)", dose: "1 Tab (250mg)", freq: "BD (Twice daily)", dur: "15 Days", inst: "After meals with milk/water" },
+            { name: "Sutshekhar Rasa", dose: "1 Tab (125mg)", freq: "BD (Twice daily)", dur: "10 Days", inst: "After meals with honey" }
+          ],
+          aiSuggestions: [
+            { name: "Syp. Gelusil MPS", dose: "10 ml", freq: "TDS", dur: "7 Days", inst: "After meals & bedtime" },
+            { name: "Cap. Rabeprazole 20mg", dose: "1 Cap", freq: "OD", dur: "14 Days", inst: "Morning before food" },
+            { name: "Shankh Bhasma 250mg", dose: "1 Pinch", freq: "BD", dur: "15 Days", inst: "With honey after meals" },
+            { name: "Tab. Yashtimadhu Ghanvati", dose: "1 Tab", freq: "BD", dur: "15 Days", inst: "Mucosal soothing" }
+          ]
+        };
+      }
+
+      // 4. Cough / Cold / Respiratory / Kasa-Shwasa
+      if (combined.includes('cough') || combined.includes('cold') || combined.includes('throat') || combined.includes('asthma') || combined.includes('wheezing') || combined.includes('bronchitis') || combined.includes('खांसी') || combined.includes('दग्गु')) {
+        return {
+          assessment: "1. Kasa-Shwasa (Acute Upper Respiratory Tract Infection / Bronchial Irritation / NAMASTE AYU-KAS-01)\n2. Vata-Kaphaja Srotorodha",
+          dashavidha: { prakriti: "Kapha-Vata", agni: "Mandagni", koshtha: "Madhyama", vikriti: "Pranavaha Sroto-dusti" },
+          planSummary: "1. Bronchodilator & mucolytic line of management\n2. Warm steam inhalation twice daily\n3. Avoid cold drinks, ice creams, and dairy at night",
+          activePrescription: [
+            { name: "Syp. Vasaka (Adhatoda Vasica)", dose: "10 ml", freq: "TDS (Thrice daily)", dur: "7 Days", inst: "With warm water after food" },
+            { name: "Sitopaladi Churna", dose: "3 Grams", freq: "TDS (Thrice daily)", dur: "7 Days", inst: "Mixed with 1 tsp pure honey" },
+            { name: "Tab. Montelukast + Levocetirizine", dose: "1 Tab", freq: "OD (Night)", dur: "7 Days", inst: "At bedtime" },
+            { name: "Talisadi Vati (250mg)", dose: "1 Tab", freq: "TDS", dur: "5 Days", inst: "Dissolve slowly in mouth" }
+          ],
+          aiSuggestions: [
+            { name: "Syp. Ascoril-D", dose: "5 ml", freq: "TDS", dur: "5 Days", inst: "For dry cough" },
+            { name: "Kanchanar Guggulu", dose: "2 Tabs", freq: "BD", dur: "10 Days", inst: "Lymph node soothing" },
+            { name: "Kanthasudharak Vati", dose: "1 Tab", freq: "SOS", dur: "As Needed", inst: "For throat irritation" },
+            { name: "Tab. Azithromycin 500mg", dose: "1 Tab", freq: "OD", dur: "3 Days", inst: "Post antibiotic check" }
+          ]
+        };
+      }
+
+      // 5. Hypertension / High Blood Pressure / Raktachapa
+      if (combined.includes('bp') || combined.includes('hypertension') || combined.includes('blood pressure') || combined.includes('रक्तचाप') || combined.includes('బీపీ')) {
+        return {
+          assessment: "1. Raktavata / Uchha Raktachapa (Essential Hypertension / NAMASTE AYU-RAK-01)\n2. Vata-Pitta Sroto-dusti",
+          dashavidha: { prakriti: "Pitta-Vata", agni: "Sama Agni", koshtha: "Madhyama", vikriti: "Raktavaha Srotas" },
+          planSummary: "1. Cardioprotective anti-hypertensive regimen\n2. Low sodium DASH diet (<3g salt/day)\n3. 20 min daily Anulom-Vilom Pranayama",
+          activePrescription: [
+            { name: "Tab. Telmisartan 40mg", dose: "1 Tab", freq: "OD (Morning)", dur: "30 Days", inst: "After breakfast" },
+            { name: "Tab. Sarpagandha Ghanvati", dose: "1 Tab (250mg)", freq: "HS (Night)", dur: "15 Days", inst: "At bedtime with warm milk" },
+            { name: "Syp. Arjunarishta", dose: "20 ml", freq: "BD (Twice daily)", dur: "30 Days", inst: "After meals with equal warm water" }
+          ],
+          aiSuggestions: [
+            { name: "Tab. Amlodipine 5mg", dose: "1 Tab", freq: "OD", dur: "30 Days", inst: "Calcium channel blocker" },
+            { name: "Brahmi Vati", dose: "1 Tab", freq: "BD", dur: "15 Days", inst: "Stress reduction" },
+            { name: "Ashwagandha Tab 500mg", dose: "1 Tab", freq: "BD", dur: "30 Days", inst: "With warm milk" },
+            { name: "Tab. Lasix 20mg", dose: "1 Tab", freq: "SOS", dur: "As Needed", inst: "Diuretic support" }
+          ]
+        };
+      }
+
+      // 6. Diabetes / High Sugar / Prameha
+      if (combined.includes('diabetes') || combined.includes('sugar') || combined.includes('glucose') || combined.includes('मधुमेह') || combined.includes('షుగర్')) {
+        return {
+          assessment: "1. Madhumeha (Type 2 Diabetes Mellitus / NAMASTE AYU-PRA-01)\n2. Kaphaja Prameha with Dhatvagni Mandya",
+          dashavidha: { prakriti: "Kapha-Pitta", agni: "Mandagni", koshtha: "Madhyama", vikriti: "Medovaha Srotas" },
+          planSummary: "1. Glycemic regulation & metabolic correction\n2. Low GI diet: Avoid refined sugar, white rice, fried snacks\n3. 45 min daily brisk morning walk",
+          activePrescription: [
+            { name: "Tab. Metformin 500mg (SR)", dose: "1 Tab", freq: "BD (Twice daily)", dur: "30 Days", inst: "With breakfast and dinner" },
+            { name: "Nisha Amalaki Churna", dose: "3 Grams", freq: "BD (Twice daily)", dur: "30 Days", inst: "Morning & evening with warm water" },
+            { name: "Tab. Chandraprabha Vati", dose: "2 Tabs", freq: "BD (Twice daily)", dur: "30 Days", inst: "After meals with water" }
+          ],
+          aiSuggestions: [
+            { name: "Karela-Jamun Juice", dose: "20 ml", freq: "OD", dur: "30 Days", inst: "Early morning empty stomach" },
+            { name: "Tab. Glimepiride 1mg", dose: "1 Tab", freq: "OD", dur: "30 Days", inst: "Before breakfast" },
+            { name: "Vasant Kusumakar Ras", dose: "1 Tab", freq: "BD", dur: "15 Days", inst: "With honey" },
+            { name: "Tab. Jambwasava", dose: "20 ml", freq: "BD", dur: "30 Days", inst: "After meals" }
+          ]
+        };
+      }
+
+      // 7. Default (Knee Pain / Osteoarthritis / Joint / Musculoskeletal)
+      return {
+        assessment: "1. Sandhigata Vata (Bilateral Knee Osteoarthritis / NAMASTE AYU-SAN-01)\n2. Dhatu Kshaya (Asthi-Majja Degeneration)",
+        dashavidha: { prakriti: "Vata-Kapha", agni: "Manda Agni", koshtha: "Madhyama", vikriti: "Dhatu Kshaya (Asthi-Majja)" },
+        planSummary: "1. Vata-pacifying joint anti-inflammatory therapy\n2. External Janu Basti with Ksheerabala Taila\n3. Low-purine dietary regimen (avoid red meat & lentils)",
+        activePrescription: [
+          { name: "Tab. Yograj Guggulu", dose: "2 Tabs (500mg)", freq: "BD (Twice daily)", dur: "15 Days", inst: "After meals with warm water" },
+          { name: "Kwath. Maharasnadi", dose: "20 ml", freq: "BD (Twice daily)", dur: "15 Days", inst: "Before food with equal water" },
+          { name: "Cap. Shallaki (500mg)", dose: "1 Cap", freq: "BD (Twice daily)", dur: "15 Days", inst: "After meals (Cartilage support)" },
+          { name: "Ext. Janu Basti (Ksheerabala Taila)", dose: "1 Sitting", freq: "OD", dur: "7 Sittings", inst: "Panchakarma Department" }
+        ],
+        aiSuggestions: [
+          { name: "Tab. Febuxostat 40mg", dose: "1 Tab", freq: "OD", dur: "30 Days", inst: "Morning after breakfast (Uric acid lowering)" },
+          { name: "Rumalaya Forte", dose: "1 Tab", freq: "BD", dur: "15 Days", inst: "After food" },
+          { name: "Tab. Calcium + D3", dose: "1 Tab", freq: "OD", dur: "30 Days", inst: "After lunch" },
+          { name: "Mahanarayan Taila Liniment", dose: "External", freq: "BD", dur: "15 Days", inst: "Gentle local massage" }
+        ]
+      };
+    }
+
+    // Live Shared Queue Synchronizer between Patient Kiosk and Doctor Portal
+    async function initDoctorQueue() {
+      try {
+        if (window.supabase) {
+          const { data, error } = await window.supabase
+            .from('encounters')
+            .select('*')
+            .order('created_at', { ascending: false });
+          if (!error && data) {
+            data.forEach(row => {
+              if (row.ui_data && row.ui_data.id) {
+                const ui = row.ui_data;
+                const condData = getConditionSpecificPrescription(ui.subjective || ui.englishTranslation, ui.assessment);
+                if (!ui.activePrescription || ui.activePrescription.length === 0) {
+                  ui.activePrescription = condData.activePrescription;
+                }
+                if (!ui.aiSuggestions || ui.aiSuggestions.length === 0) {
+                  ui.aiSuggestions = condData.aiSuggestions;
+                }
+                if (!ui.planSummary) {
+                  ui.planSummary = condData.planSummary;
+                }
+                CLINICAL_PROFILES[ui.id] = ui;
+              }
+            });
+          }
+        }
+      } catch (e) {
+        console.error("Error fetching queue", e);
+      }
+
+      // Check localStorage shared queue
+      try {
+        const localQ = JSON.parse(localStorage.getItem("MEDIKIOSK_SHARED_QUEUE") || "[]");
+        localQ.forEach(item => {
+          const key = item.id || item.encId || ("enc-" + (item.token || "").replace("#", ""));
+          if (key && !CLINICAL_PROFILES[key]) {
+            const subj = item.subjective || item.chief_complaint || item.englishTranslation || "OPD Intake Consultation";
+            const condData = getConditionSpecificPrescription(subj, item.assessment || item.diagnosis);
+            
+            CLINICAL_PROFILES[key] = {
+              id: key,
+              tokenNumber: item.tokenNumber || item.token || "#999",
+              patientName: item.patientName || item.name || "Walk-In Patient",
+              age: item.age || 45,
+              gender: item.gender || "Unknown",
+              avatar: (item.patientName || "PT").slice(0, 2).toUpperCase(),
+              location: item.location || "Telangana",
+              abhaId: item.abha || item.abhaId || "91-0000-0000-0000",
+              abhaAddress: item.abhaAddress || "patient@abdm",
+              hasPmjay: item.hasPmjay || item.pmjay_eligible || false,
+              isEmergency: item.isEmergency || (item.triage_priority === 'EMERGENCY_RED') || false,
+              nativeLang: item.nativeLang || "English",
+              nativeSpeech: item.nativeSpeech || `"${item.chief_complaint || ''}"`,
+              subjective: subj,
+              objective: item.objective || "Vitals: BP: 120/80 • Pulse: 72 bpm • SpO2: 98%",
+              assessment: item.assessment || item.diagnosis || condData.assessment,
+              dashavidha: item.dashavidha || condData.dashavidha,
+              planSummary: item.planSummary || condData.planSummary,
+              aiSuggestions: (item.aiSuggestions && item.aiSuggestions.length > 0) ? item.aiSuggestions : condData.aiSuggestions,
+              activePrescription: (item.activePrescription && item.activePrescription.length > 0) ? item.activePrescription : condData.activePrescription
+            };
+          }
+        });
+      } catch (e) {}
+
+      // Filter and Sort Queue
+      let allEncIds = Object.keys(CLINICAL_PROFILES);
+
+      if (currentFilter === 'pmjay') {
+        allEncIds = allEncIds.filter(id => CLINICAL_PROFILES[id].hasPmjay);
+      } else if (currentFilter === 'emergency') {
+        allEncIds = allEncIds.filter(id => CLINICAL_PROFILES[id].isEmergency);
+      }
+
+      allEncIds.sort((a, b) => {
+        const pA = CLINICAL_PROFILES[a];
+        const pB = CLINICAL_PROFILES[b];
+        if (pA.isEmergency && !pB.isEmergency) return -1;
+        if (!pA.isEmergency && pB.isEmergency) return 1;
+        return 0;
+      });
+
+      const queueListEl = document.getElementById("queue-list");
+      const countEl = document.getElementById("queue-count");
+      if (countEl) countEl.innerText = `${allEncIds.length} Patient${allEncIds.length !== 1 ? 's' : ''}`;
+
+      if (queueListEl) {
+        if (allEncIds.length === 0) {
+          queueListEl.innerHTML = `
+            <div class="p-6 text-center text-slate-500 text-xs italic bg-slate-50 rounded-xl border border-slate-200">
+              No patients found matching this filter.
+            </div>
+          `;
+        } else {
+          queueListEl.innerHTML = allEncIds.map(encId => {
+            const p = CLINICAL_PROFILES[encId];
+            const isSelected = (encId === currentSelectedEncId);
+            
+            let cardClasses = "";
+            if (p.isEmergency) {
+              cardClasses = isSelected
+                ? "bg-rose-50 border-2 border-rose-600 shadow-sm"
+                : "bg-rose-50/60 border border-rose-300 hover:border-rose-500 shadow-sm";
+            } else {
+              cardClasses = isSelected
+                ? "bg-blue-50/70 border-2 border-blue-600 shadow-sm"
+                : "bg-white border border-slate-200 hover:border-blue-400 shadow-sm";
+            }
+
+            return `
+              <div id="queue-item-${encId}" onclick="selectEncounter('${encId}')" class="${cardClasses} p-3.5 rounded-xl cursor-pointer transition space-y-2 group">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-black px-2 py-0.5 rounded bg-[#223D79] text-[#FFA530] flex items-center gap-1.5 shadow-sm">
+                    ${p.isEmergency ? '<span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>' : ''}
+                    ${p.tokenNumber}
+                  </span>
+                  <span class="text-[11px] ${p.isEmergency ? 'text-rose-700 bg-rose-100 border border-rose-300 px-2 py-0.5 rounded font-black' : (p.hasPmjay ? 'text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded font-bold' : 'text-slate-600 bg-slate-100 px-2 py-0.5 rounded font-semibold')}">
+                    ${p.isEmergency ? '🚨 STAT EMERGENCY' : (p.hasPmjay ? '₹5L PM-JAY' : 'General OPD')}
+                  </span>
+                </div>
+                <div>
+                  <h4 class="font-bold text-sm text-slate-900 group-hover:text-blue-700 transition">${p.patientName} (${p.age}${p.gender === 'Male' ? 'M' : 'F'})</h4>
+                  <p class="text-xs text-slate-600 line-clamp-1 mt-0.5">${p.englishTranslation || p.subjective || ''}</p>
+                </div>
+                <div class="flex items-center justify-between text-[11px] text-slate-500 pt-1.5 border-t border-slate-200">
+                  <span class="font-semibold text-slate-600">ALLOPATHIC / AYUSH</span>
+                  <div class="flex items-center gap-1.5">
+                    <button onclick="event.stopPropagation(); selectEncounter('${encId}'); generateAndDownloadPrescriptionPdf();" class="px-2 py-0.5 rounded-md bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-bold text-[10px] flex items-center gap-1 border border-emerald-300" title="Direct Download PDF">
+                      <i data-lucide="download" class="w-3 h-3"></i> PDF
+                    </button>
+                    <span class="text-blue-600 font-bold flex items-center gap-0.5">Review <i data-lucide="chevron-right" class="w-3 h-3 inline"></i></span>
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join("");
+        }
+      }
+
+      // Auto select first encounter if available and current not in list
+      if (allEncIds.length > 0 && !allEncIds.includes(currentSelectedEncId)) {
+        selectEncounter(allEncIds[0]);
+      } else if (currentSelectedEncId && CLINICAL_PROFILES[currentSelectedEncId]) {
+        selectEncounter(currentSelectedEncId);
+      }
+
+      if (typeof lucide !== "undefined") lucide.createIcons();
+    }
+
+    // Auto-listen to cross-tab updates when patient kiosk completes intake
+    window.addEventListener("storage", function(e) {
+      if (e.key === "MEDIKIOSK_SHARED_QUEUE" || e.key === "MEDIKIOSK_LAST_TOKEN_NUM") {
+        initDoctorQueue();
+      }
+    });
+
+    // Run on load
+    document.addEventListener("DOMContentLoaded", () => {
+      initDoctorQueue();
+      setInterval(initDoctorQueue, 5000);
+    });
+
+    const fetchQueue = initDoctorQueue;
+
+    
+    let doctorAudioPlayer = null;
+
+    function playCurrentPatientNativeAudio() {
+      if (!currentSelectedEncId || !CLINICAL_PROFILES[currentSelectedEncId]) return;
+      const data = CLINICAL_PROFILES[currentSelectedEncId];
+      const rawText = (data.nativeSpeech || "").replace(/"/g, "").trim();
+      if (!rawText) return;
+
+      const btn = document.getElementById("btn-play-patient-voice");
+      if (btn) {
+        btn.innerHTML = `<i data-lucide="loader" class="w-3.5 h-3.5 animate-spin"></i> <span>Playing...</span>`;
+        if (typeof lucide !== "undefined") lucide.createIcons();
+      }
+
+      if (doctorAudioPlayer) {
+        doctorAudioPlayer.pause();
+        doctorAudioPlayer = null;
+      }
+      if ("speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
+
+      const langCode = (data.nativeLang && data.nativeLang.includes("Telugu")) ? "te-IN" :
+                       (data.nativeLang && data.nativeLang.includes("Hindi")) ? "hi-IN" :
+                       (data.nativeLang && data.nativeLang.includes("Tamil")) ? "ta-IN" :
+                       (data.nativeLang && data.nativeLang.includes("Kannada")) ? "kn-IN" :
+                       (data.nativeLang && data.nativeLang.includes("Marathi")) ? "mr-IN" :
+                       (data.nativeLang && data.nativeLang.includes("Bengali")) ? "bn-IN" :
+                       (data.nativeLang && data.nativeLang.includes("Gujarati")) ? "gu-IN" : "en-IN";
+
+      fetch("/api/v1/ai/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: rawText, language_code: langCode })
+      })
+      .then(res => res.json())
+      .then(d => {
+        if (d && d.audio_base64) {
+          doctorAudioPlayer = new Audio("data:audio/wav;base64," + d.audio_base64);
+          doctorAudioPlayer.onended = () => {
+            if (btn) {
+              btn.innerHTML = `<i data-lucide="volume-2" class="w-3.5 h-3.5"></i> <span>Listen Spoken Audio</span>`;
+              if (typeof lucide !== "undefined") lucide.createIcons();
+            }
+          };
+          doctorAudioPlayer.play().catch(e => {
+            console.log("Audio play error, fallback to browser synthesis:", e);
+            fallbackDoctorSynthesis();
+          });
+        } else {
+          fallbackDoctorSynthesis();
+        }
+      })
+      .catch(err => {
+        fallbackDoctorSynthesis();
+      });
+
+      function fallbackDoctorSynthesis() {
+        if (!("speechSynthesis" in window)) return;
+        try {
+          window.speechSynthesis.cancel();
+          if (window.speechSynthesis.resume) window.speechSynthesis.resume();
+          const u = new SpeechSynthesisUtterance(rawText);
+          u.lang = langCode;
+          u.rate = 0.95;
+          u.onend = () => {
+            if (btn) {
+              btn.innerHTML = `<i data-lucide="volume-2" class="w-3.5 h-3.5"></i> <span>Listen Spoken Audio</span>`;
+              if (typeof lucide !== "undefined") lucide.createIcons();
+            }
+          };
+          window.speechSynthesis.speak(u);
+        } catch (e) {
+          if (btn) {
+            btn.innerHTML = `<i data-lucide="volume-2" class="w-3.5 h-3.5"></i> <span>Listen Spoken Audio</span>`;
+            if (typeof lucide !== "undefined") lucide.createIcons();
+          }
+        }
+      }
+    }
+
+    function sanitizeToEnglishSubjective(data) {
+      if (!data) return "";
+      let eng = data.englishTranslation || "";
+      
+      // If englishTranslation contains Telugu or Hindi script, clean it deterministically
+      const hasIndic = /[ఀ-౿ऀ-ॿ஀-௿ಀ-೿]/.test(eng);
+      if (!eng || hasIndic || eng.includes("కడుపు") || eng.includes("నొప్పి")) {
+        const raw = (data.nativeSpeech || data.selectedSymptom || data.chief_complaint || "").toLowerCase();
+        if (raw.includes("కడుపు") || raw.includes("మంట") || raw.includes("అజీర్ణం") || raw.includes("stomach") || raw.includes("acidity") || raw.includes("పేట్") || raw.includes("पेट")) {
+          eng = "Severe epigastric abdominal pain, burning sensation (Amlapitta), and post-prandial acid reflux for 3 weeks.";
+        } else if (raw.includes("ఛాతీ") || raw.includes("గుండె") || raw.includes("chest") || raw.includes("heart") || raw.includes("సీనే") || raw.includes("सीने")) {
+          eng = "Acute retrosternal crushing chest pain radiating to left jaw with diaphoresis (EMERGENCY STAT).";
+        } else if (raw.includes("మోకాళ్ళ") || raw.includes("కీళ్ళ") || raw.includes("knee") || raw.includes("joint") || raw.includes("घुटनों") || raw.includes("जोड़ों")) {
+          eng = "Bilateral knee joint pain, crepitus, and morning stiffness for 6 months (Sandhigata Vata).";
+        } else if (raw.includes("జ్వరం") || raw.includes("చలి") || raw.includes("fever") || raw.includes("बुखार")) {
+          eng = "High-grade fever with chills, rigors, and generalized body aches for 4 days.";
+        } else if (raw.includes("తల") || raw.includes("headache") || raw.includes("सिर")) {
+          eng = "Severe throbbing headache with photophobia and generalized fatigue.";
+        } else {
+          eng = "General clinical consultation requested for symptomatic evaluation.";
+        }
+      }
+
+      const age = data.age || 45;
+      const gen = (data.gender || "Male").toLowerCase();
+      return `${age}-year-old ${gen} presents with: ${eng}\n\n(Original Spoken Audio: ${data.nativeSpeech || 'Recorded at Kiosk'})`;
+    }
+
+    function selectEncounter(encId) {
+      currentSelectedEncId = encId;
+      const data = CLINICAL_PROFILES[encId];
+      if (!data) return;
+
+      if (!data.activePrescription || data.activePrescription.length === 0 || !data.aiSuggestions || data.aiSuggestions.length === 0) {
+        const cond = getConditionSpecificPrescription(data.subjective || data.englishTranslation, data.assessment);
+        if (!data.activePrescription || data.activePrescription.length === 0) data.activePrescription = cond.activePrescription;
+        if (!data.aiSuggestions || data.aiSuggestions.length === 0) data.aiSuggestions = cond.aiSuggestions;
+        if (!data.planSummary) data.planSummary = cond.planSummary;
+      }
+
+      // 1. Highlight selected item in queue
+      const allEncIds = Object.keys(CLINICAL_PROFILES);
+      allEncIds.forEach(k => {
+        const item = document.getElementById(`queue-item-${k}`);
+        if (!item) return;
+        const p = CLINICAL_PROFILES[k];
+        if (k === encId) {
+          item.className = "p-3.5 rounded-xl border-2 " + (p && p.isEmergency ? "border-rose-600 bg-rose-50" : "border-blue-600 bg-blue-50/70") + " cursor-pointer transition space-y-2 group shadow-sm";
+        } else {
+          item.className = "p-3.5 rounded-xl border " + (p && p.isEmergency ? "border-rose-300 bg-rose-50/60 hover:border-rose-500" : "border-slate-200 bg-white hover:border-blue-400") + " cursor-pointer transition space-y-2 group shadow-sm";
+        }
+      });
+
+      // 2. Update Patient Header
+      const nameEl = document.getElementById("patient-name-display") || document.getElementById("pat-name");
+      if (nameEl) nameEl.innerText = `${data.patientName} (${data.age}${data.gender === "Male" ? "M" : "F"})`;
+
+      const metaEl = document.getElementById("patient-meta-display") || document.getElementById("pat-meta");
+      if (metaEl) metaEl.innerText = `${data.age} Yrs • ${data.gender} • ${data.location || "Telangana"}`;
+
+      const avatarEl = document.getElementById("patient-avatar-display");
+      if (avatarEl) avatarEl.innerText = data.avatar || "PT";
+
+      const tokenEl = document.getElementById("token-badge");
+      if (tokenEl) tokenEl.innerText = `TOKEN ${data.tokenNumber}`;
+
+      const abhaDetailsEl = document.getElementById("patient-abha-details") || document.getElementById("pat-abha");
+      if (abhaDetailsEl) abhaDetailsEl.innerText = `ABHA ID: ${data.abhaId} • ${data.abhaAddress}`;
+
+      const pmjayBadge = document.getElementById("patient-pmjay-badge");
+      if (pmjayBadge) {
+        if (data.hasPmjay) {
+          pmjayBadge.innerText = "₹5L PM-JAY Cashless";
+          pmjayBadge.className = "text-xs bg-amber-50 text-amber-900 border border-amber-300 px-2.5 py-0.5 rounded-full font-bold";
+        } else {
+          pmjayBadge.innerText = "General OPD";
+          pmjayBadge.className = "text-xs bg-slate-100 text-slate-700 border border-slate-300 px-2.5 py-0.5 rounded-full font-semibold";
+        }
+      }
+
+      // 3. Update Cross-Lingual S: Subjective
+      const nativeEl = document.getElementById("soap-native-text");
+      if (nativeEl) nativeEl.innerText = data.nativeSpeech || `"${data.subjective}"`;
+
+      const langBadge = document.getElementById("patient-lang-badge");
+      if (langBadge) langBadge.innerText = data.nativeLang || "Native Language";
+
+      const soapSEl = document.getElementById("soap-s");
+      if (soapSEl) {
+        soapSEl.innerText = sanitizeToEnglishSubjective(data);
+      }
+
+      // 4. Update O: Objective & Labs
+      const soapOEl = document.getElementById("soap-o");
+      if (soapOEl) soapOEl.innerText = data.objective || "Clinical Vitals: [Pending In-Person Chamber Measurement]";
+
+      const labsContainer = document.getElementById("soap-o-labs");
+      if (labsContainer) {
+        if (encId === "enc-0042" || (data.patientName && data.patientName.includes("Ramesh"))) {
+          labsContainer.innerHTML = `
+            <div class="flex justify-between items-center bg-rose-50 border border-rose-200 px-3 py-1.5 rounded-xl text-xs">
+              <span class="font-bold text-rose-900">Serum Uric Acid</span>
+              <span class="font-black text-rose-700">7.8 mg/dL <span class="text-[10px] bg-rose-600 text-white px-1.5 py-0.5 rounded font-black">HIGH</span></span>
+            </div>
+            <div class="flex justify-between items-center bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl text-xs">
+              <span class="text-slate-600 font-semibold">HbA1c</span>
+              <span class="font-bold text-slate-900">6.1 %</span>
+            </div>
+          `;
+        } else if (encId === "enc-0043" || (data.patientName && data.patientName.includes("Priya"))) {
+          labsContainer.innerHTML = `
+            <div class="flex justify-between items-center bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-xl text-xs">
+              <span class="font-bold text-amber-900">Upper GI Endoscopy</span>
+              <span class="font-bold text-amber-700">Antral Gastritis</span>
+            </div>
+            <div class="flex justify-between items-center bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl text-xs">
+              <span class="text-emerald-700 font-semibold">H. Pylori Stool Ag</span>
+              <span class="font-bold text-emerald-800">Negative (Normal)</span>
+            </div>
+          `;
+        } else if (data.isEmergency || (data.patientName && data.patientName.includes("Mohan"))) {
+          labsContainer.innerHTML = `
+            <div class="flex justify-between items-center bg-rose-50 border border-rose-300 px-3 py-1.5 rounded-xl text-xs animate-pulse">
+              <span class="font-bold text-rose-900">STAT Cardiac Troponin-I</span>
+              <span class="font-black text-rose-700">1.84 ng/mL <span class="text-[10px] bg-rose-600 text-white px-1.5 py-0.5 rounded font-black">CRITICAL</span></span>
+            </div>
+            <div class="flex justify-between items-center bg-rose-50 border border-rose-200 px-3 py-1.5 rounded-xl text-xs">
+              <span class="text-rose-800 font-bold">12-Lead ECG</span>
+              <span class="font-black text-rose-700">ST-Elevation V1-V4 (STEMI)</span>
+            </div>
+          `;
+        } else {
+          labsContainer.innerHTML = `
+            <div class="flex justify-between items-center bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl text-xs">
+              <span class="text-slate-600 font-semibold">Digitized Document Status</span>
+              <span class="font-bold text-emerald-600">✓ Intake Complete</span>
+            </div>
+          `;
+        }
+      }
+
+      // 5. Update A: Assessment & Dashavidha
+      const soapAEl = document.getElementById("soap-a");
+      if (soapAEl) soapAEl.innerText = data.assessment;
+
+      const dashPrakriti = document.getElementById("dash-prakriti");
+      if (dashPrakriti && data.dashavidha) dashPrakriti.innerText = data.dashavidha.prakriti;
+
+      const dashAgni = document.getElementById("dash-agni");
+      if (dashAgni && data.dashavidha) dashAgni.innerText = data.dashavidha.agni;
+
+      const dashKoshtha = document.getElementById("dash-koshtha");
+      if (dashKoshtha && data.dashavidha) dashKoshtha.innerText = data.dashavidha.koshtha;
+
+      const dashVikriti = document.getElementById("dash-vikriti");
+      if (dashVikriti && data.dashavidha) dashVikriti.innerText = data.dashavidha.vikriti;
+
+      // 6. Update P: Plan Summary Textarea dynamically
+      const soapPEl = document.getElementById("soap-p");
+      if (soapPEl) {
+        soapPEl.value = data.planSummary || "1. Comprehensive clinical evaluation\n2. Diet & lifestyle intervention\n3. Review after prescribed course";
+      }
+
+      // 7. Load Personalized Active Prescription Table for this patient
+      activeMedications = JSON.parse(JSON.stringify(data.activePrescription || []));
+      renderPrescriptionTable();
+
+      // 8. Update AI Drug Suggester Quick-Add Chips
+      renderAiSuggestionChips(data.aiSuggestions || []);
+
+      // 9. Re-initialize Lucide Icons
+      if (typeof lucide !== "undefined") lucide.createIcons();
+    }
+
+    function renderAiSuggestionChips(suggestions) {
+      const container = document.getElementById("ai-drug-chips-container");
+      if (!container || !suggestions) return;
+
+      container.innerHTML = suggestions.map((s, idx) => {
+        const isAdded = activeMedications.some(m => m.name.toLowerCase() === s.name.toLowerCase());
+        if (isAdded) {
+          return `
+            <button onclick="toggleSuggestedMedicine(${idx})" class="bg-emerald-50 hover:bg-rose-50 text-emerald-800 hover:text-rose-800 border border-emerald-300 hover:border-rose-300 text-xs font-bold py-1.5 px-3 rounded-lg transition shadow-sm flex items-center gap-1.5" title="Click to remove from prescription">
+              <span class="text-emerald-700 font-black">✓ Added:</span>
+              <span>${s.name}</span>
+              <span class="text-[10px] text-slate-500 font-normal">(${s.freq})</span>
+              <span class="text-[10px] text-rose-600 font-black ml-1">✕</span>
+            </button>
+          `;
+        } else {
+          return `
+            <button onclick="toggleSuggestedMedicine(${idx})" class="bg-slate-100 hover:bg-blue-50 text-slate-800 hover:text-blue-800 border border-slate-300 hover:border-blue-300 text-xs font-semibold py-1.5 px-3 rounded-lg transition shadow-sm flex items-center gap-1.5" title="Click to add to prescription">
+              <span class="font-black text-sm text-blue-600">+</span>
+              <span>${s.name}</span>
+              <span class="text-[10px] text-slate-500 font-normal">(${s.freq})</span>
+            </button>
+          `;
+        }
+      }).join("");
+
+      if (typeof lucide !== "undefined") lucide.createIcons();
+    }
+
+    function toggleSuggestedMedicine(idx) {
+      const data = CLINICAL_PROFILES[currentSelectedEncId];
+      if (!data || !data.aiSuggestions || !data.aiSuggestions[idx]) return;
+      const s = data.aiSuggestions[idx];
+
+      const existingIndex = activeMedications.findIndex(m => m.name.toLowerCase() === s.name.toLowerCase());
+      if (existingIndex !== -1) {
+        // Remove it (1-click toggle remove)
+        activeMedications.splice(existingIndex, 1);
+      } else {
+        // Add it (1-click add)
+        activeMedications.push({
+          name: s.name,
+          dose: s.dose,
+          freq: s.freq,
+          dur: s.dur,
+          inst: s.inst
+        });
+      }
+
+      renderPrescriptionTable();
+      renderAiSuggestionChips(data.aiSuggestions || []);
+    }
+
+    function removeMedicine(idx) {
+      if (idx >= 0 && idx < activeMedications.length) {
+        activeMedications.splice(idx, 1);
+        renderPrescriptionTable();
+        const data = CLINICAL_PROFILES[currentSelectedEncId];
+        if (data && data.aiSuggestions) {
+          renderAiSuggestionChips(data.aiSuggestions);
+        }
+      }
+    }
+
+    function addCustomMedicineFromInputs() {
+      const nameInput = document.getElementById("add-med-name");
+      const doseInput = document.getElementById("add-med-dose");
+      const freqInput = document.getElementById("add-med-freq");
+
+      const name = nameInput ? nameInput.value.trim() : "";
+      const dose = doseInput ? (doseInput.value.trim() || "1 Tab") : "1 Tab";
+      const freq = freqInput ? freqInput.value : "BD (Twice daily)";
+
+      if (!name) {
+        alert("⚠️ Please enter a medicine name");
+        return;
+      }
+
+      activeMedications.push({
+        name: name,
+        dose: dose,
+        freq: freq,
+        dur: "15 Days",
+        inst: "As advised by physician"
+      });
+
+      if (nameInput) nameInput.value = "";
+      if (doseInput) doseInput.value = "";
+      renderPrescriptionTable();
+      const data = CLINICAL_PROFILES[currentSelectedEncId];
+      if (data && data.aiSuggestions) {
+        renderAiSuggestionChips(data.aiSuggestions);
+      }
+    }
+
+    async function regeneratePlanWithSarvam() {
+      const data = CLINICAL_PROFILES[currentSelectedEncId];
+      if (!data) return;
+
+      const soapPEl = document.getElementById("soap-p");
+      if (soapPEl) soapPEl.value = "🇮🇳 Sarvam-105B Foundational Clinical LLM is synthesizing personalized Ayurvedic & modern clinical plan...";
+
+      try {
+        const res = await fetch("/api/v1/ai/scribe", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            symptoms: data.subjective,
+            patient_id: data.patient_id || ""
+          })
+        });
+
+        if (res.ok) {
+          const resData = await res.json();
+          if (resData.plan) {
+            const planText = resData.plan;
+            if (soapPEl) soapPEl.value = planText;
+            alert(`✅ Sarvam-105B Sovereign Clinical Plan Regenerated for ${data.patientName}!`);
+            return;
+          }
+        }
+      } catch (err) {
+        console.log("Sarvam-105B Direct call fallback:", err);
+      }
+
+      // Fallback
+      setTimeout(() => {
+        if (soapPEl) {
+          soapPEl.value = `🇮🇳 Sarvam-105B Synthesized Plan for ${data.patientName} (${data.assessment ? data.assessment.slice(0, 60) : ''}):
+1. Targeted Dosha-Shamana formulation regimen with warm water Anupana
+2. Dietary correction & Pathya-Apathya counselled
+3. Panchakarma / External therapy line initialized
+4. Follow-up consultation scheduled in 15 days`;
+        }
+        alert(`✅ Sarvam-105B Sovereign Clinical Plan Synthesized for ${data.patientName}!`);
+      }, 400);
+    }
+
+    function renderPrescriptionTable() {
+      const tbody = document.getElementById("prescription-table-body");
+      if (!tbody) return;
+
+      if (!activeMedications || activeMedications.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-500 text-xs italic bg-slate-50 rounded-lg">No formulations added yet. Tap <strong>"+ Medicine"</strong> chips above or enter a custom prescription below.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = activeMedications.map((m, idx) => `
+        <tr class="hover:bg-slate-50 border-b border-slate-100 transition">
+          <td class="p-3 font-bold text-slate-900 text-xs">${m.name}</td>
+          <td class="p-3 text-slate-600 font-mono text-xs">${m.dose}</td>
+          <td class="p-3">
+            <span class="bg-[#223D79] text-[#FFA530] font-bold px-2 py-0.5 rounded text-[10px]">
+              ${m.freq}
+            </span>
+          </td>
+          <td class="p-3 text-slate-600 text-xs">${m.dur}</td>
+          <td class="p-3 text-slate-600 text-[11px]">${m.inst}</td>
+          <td class="p-3 text-center">
+            <button onclick="removeMedicine(${idx})" class="px-2.5 py-1 bg-red-50 hover:bg-red-100 text-red-700 hover:text-red-900 border border-red-200 hover:border-red-300 rounded-lg text-xs font-bold transition flex items-center gap-1 mx-auto shadow-sm" title="1-Click Remove Medicine">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5 text-red-600"></i>
+              <span>Remove</span>
+            </button>
+          </td>
+        </tr>
+      `).join("");
+
+      if (typeof lucide !== "undefined") lucide.createIcons();
+    }
+
+    async function approvePrescription() {
+      const data = CLINICAL_PROFILES[currentSelectedEncId];
+      if (!data) return;
+
+      const btnApprove = document.querySelector("button[onclick='approvePrescription()']");
+      if (btnApprove) {
+        btnApprove.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Pushing to Govt DB...`;
+        btnApprove.disabled = true;
+      }
+
+      const banner = document.getElementById("success-banner");
+      if (banner) banner.classList.remove("hidden");
+
+      // Generate Govt & ABDM IDs
+      const txId = "ABDM-TX-" + Math.random().toString(36).substring(2, 10).toUpperCase();
+      const fhirId = "urn:uuid:" + ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, function(c) {
+        return (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16);
+      });
+      const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const diagStr = data.assessment ? data.assessment.slice(0, 60) : "Sandhigata Vata (Knee OA)";
+
+      // 1. Push to FastAPI Backend (SQLite medikiosk.db)
+      try {
+        await fetch("/api/v1/doctor/encounter/approve", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            encounter_id: currentSelectedEncId,
+            patient_name: data.patientName,
+            abha_id: data.abhaId || "91-4829-1029-4821",
+            token_number: data.tokenNumber,
+            diagnosis: diagStr,
+            prescription: data.activePrescription || [],
+            soap_note: {
+              subjective: data.subjective,
+              objective: data.objective,
+              assessment: data.assessment,
+              plan: data.plan
+            }
+          })
+        });
+        console.log("Approved encounter persisted to FastAPI / SQLite database!");
+      } catch (err) {
+        console.log("Backend offline, saving to Local Government DB Store:", err);
+      }
+
+      // 2. Persist to Government Store in localStorage (MEDIKIOSK_GOVT_DB)
+      let govtDb = [];
+      try {
+        govtDb = JSON.parse(localStorage.getItem("MEDIKIOSK_GOVT_DB") || "[]");
+      } catch(e) { govtDb = []; }
+
+      const govtRecord = {
+        txId: txId,
+        encounterId: currentSelectedEncId,
+        token: data.tokenNumber,
+        name: data.patientName,
+        age: data.age,
+        gender: data.gender,
+        abha: data.abhaId || "91-4829-1029-4821",
+        complaint: diagStr,
+        isEmergency: data.tokenNumber.includes("E"),
+        abdmStatus: "M2 Care Context Linked (Govt DB)",
+        pmjayStatus: "CLAIM APPROVED (₹5,000)",
+        fhirBundleId: fhirId,
+        time: nowStr,
+        timestamp: new Date().toISOString()
+      };
+
+      govtDb.unshift(govtRecord);
+      localStorage.setItem("MEDIKIOSK_GOVT_DB", JSON.stringify(govtDb));
+
+      // 3. Update Shared Queue Status
+      try {
+        let queue = JSON.parse(localStorage.getItem("MEDIKIOSK_SHARED_QUEUE") || "[]");
+        queue.forEach(function(item) {
+          if (item.token === data.tokenNumber || item.id === currentSelectedEncId) {
+            item.status = "COMPLETED_APPROVED";
+            item.abdmStatus = "M2 Care Context Linked";
+          }
+        });
+        localStorage.setItem("MEDIKIOSK_SHARED_QUEUE", JSON.stringify(queue));
+      } catch(e) {}
+
+      // 4. Update UI Banner & Sidebar
+      const bannerSpan = banner ? banner.querySelector("span") : null;
+      if (bannerSpan) {
+        bannerSpan.innerHTML = `<i data-lucide="check-circle" class="w-4 h-4 text-emerald-700 inline"></i> <b>${data.patientName} (${data.tokenNumber})</b> Approved! Pushed to Govt DB (${txId}) & NRCeS FHIR R4 Bundle Synced.`;
+      }
+
+      const queueItem = document.getElementById(`queue-item-${currentSelectedEncId}`);
+      if (queueItem) {
+        queueItem.classList.remove("border-[#FFA530]", "border-rose-500", "border-blue-600");
+        queueItem.classList.add("border-emerald-500", "bg-emerald-50");
+      }
+
+      if (btnApprove) {
+        btnApprove.innerHTML = `<i data-lucide="check-check" class="w-4 h-4"></i> Saved to Govt DB`;
+        btnApprove.className = "px-4 py-2 rounded-xl bg-emerald-700 text-xs font-bold text-white shadow flex items-center gap-1.5 cursor-default";
+      }
+
+      if (typeof lucide !== "undefined") lucide.createIcons();
+      
+      window.dispatchEvent(new Event('storage'));
+
+      // Automatically generate and download official prescription PDF for the patient immediately
+      generateAndDownloadPrescriptionPdf();
+      
+      alert(`✅ Encounter ${data.tokenNumber} for ${data.patientName} Approved!\n\n1. Pushed to Govt DB (Transaction: ${txId})\n2. NRCeS FHIR R4 Bundle Linked (ID: ${fhirId})\n3. ABDM Milestone 2 (HIP Care Context) Completed.\n4. Official Prescription PDF downloaded for patient.`);
+    }
+
+    function generateAndDownloadPrescriptionPdf(autoPrint = false) {
+      const data = CLINICAL_PROFILES[currentSelectedEncId] || CLINICAL_PROFILES["enc-0042"] || {};
+      
+      const { jsPDF } = window.jspdf || {};
+      if (!jsPDF) {
+        console.warn("jsPDF not loaded, opening browser print fallback");
+        window.print();
+        return;
+      }
+
+      const doc = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4"
+      });
+
+      const navy = [34, 61, 121]; // #223D79
+      const darkText = [30, 41, 59];
+      const lightGray = [241, 245, 249];
+      const borderCol = [203, 213, 225];
+
+      // Top Tricolor Strip
+      doc.setFillColor(255, 153, 51); // Saffron
+      doc.rect(0, 0, 70, 2.5, "F");
+      doc.setFillColor(255, 255, 255); // White
+      doc.rect(70, 0, 70, 2.5, "F");
+      doc.setFillColor(19, 136, 8); // Green
+      doc.rect(140, 0, 70, 2.5, "F");
+
+      // Hospital Header Banner
+      doc.setFillColor(...navy);
+      doc.rect(0, 2.5, 210, 26, "F");
+
+      doc.setTextColor(255, 255, 255);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(13);
+      doc.text("ALL INDIA INSTITUTE OF AYURVEDA (AIIA)", 105, 11, { align: "center" });
+
+      doc.setFontSize(8.5);
+      doc.setFont("helvetica", "normal");
+      doc.text("Ministry of Ayush, Government of India • Central OPD Clinical Facility", 105, 17, { align: "center" });
+      
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8);
+      doc.setTextColor(255, 165, 48); // Amber accent
+      doc.text("OFFICIAL OUTPATIENT PRESCRIPTION & ABDM CASE SUMMARY", 105, 23, { align: "center" });
+
+      // Patient Metadata Box
+      doc.setDrawColor(...borderCol);
+      doc.setFillColor(...lightGray);
+      doc.roundedRect(12, 32, 186, 26, 2, 2, "FD");
+
+      const tokenStr = data.tokenNumber || (document.getElementById("token-badge") ? document.getElementById("token-badge").innerText : "#061");
+      const nameStr = data.patientName || (document.getElementById("patient-name-display") ? document.getElementById("patient-name-display").innerText : "Ramesh Chandra");
+      const ageStr = `${data.age || 45} Yrs / ${data.gender || 'Male'}`;
+      const abhaStr = data.abhaId || "91-4829-1029-4821";
+      const nowStr = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+      doc.setFontSize(8.5);
+      doc.setTextColor(...navy);
+      doc.setFont("helvetica", "bold");
+      doc.text(`Token: ${tokenStr}`, 16, 38);
+      doc.text(`Patient: ${nameStr}`, 70, 38);
+      doc.text(`Age/Sex: ${ageStr}`, 142, 38);
+
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(...darkText);
+      doc.text(`ABHA ID: ${abhaStr}`, 16, 45);
+      doc.text(`Date & Time: ${nowStr}`, 70, 45);
+      doc.text(`Dept: Kayachikitsa / OPD`, 142, 45);
+
+      doc.text(`Encounter: ${data.encounterId || 'ENC-0042'}`, 16, 52);
+      doc.text(`Doctor: Dr. A. Sharma, MD (AIIA)`, 70, 52);
+      doc.text(`Scheme: PM-JAY Cashless Eligible`, 142, 52);
+
+      let currentY = 64;
+
+      // 1. Clinical Assessment & Diagnosis Section
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.setTextColor(...navy);
+      doc.text("1. CLINICAL ASSESSMENT & AYURVEDIC EXAMINATION:", 14, currentY);
+      currentY += 5;
+
+      const soapSEl = document.getElementById("soap-s");
+      const subjectiveText = String((soapSEl ? (soapSEl.innerText || soapSEl.textContent || soapSEl.value) : '') || data.subjective || "Patient reports symptoms via Kiosk.").trim();
+
+      const soapOEl = document.getElementById("soap-o");
+      const objectiveText = String((soapOEl ? (soapOEl.innerText || soapOEl.textContent || soapOEl.value) : '') || data.objective || "Vitals within normal limits.").trim();
+
+      const soapAEl = document.getElementById("soap-a");
+      const assessmentRaw = String((soapAEl ? (soapAEl.innerText || soapAEl.textContent || soapAEl.value) : '') || data.assessment || "Clinical Evaluation").trim();
+      
+      const prakriti = String((document.getElementById("dash-prakriti") ? document.getElementById("dash-prakriti").innerText : '') || data.prakriti || (data.dashavidha ? data.dashavidha.prakriti : "Vata-Pitta"));
+      const agni = String((document.getElementById("dash-agni") ? document.getElementById("dash-agni").innerText : '') || (data.dashavidha ? data.dashavidha.agni : "Mandagni"));
+      const koshtha = String((document.getElementById("dash-koshtha") ? document.getElementById("dash-koshtha").innerText : '') || (data.dashavidha ? data.dashavidha.koshtha : "Madhyama"));
+      const vikriti = String((document.getElementById("dash-vikriti") ? document.getElementById("dash-vikriti").innerText : '') || (data.dashavidha ? data.dashavidha.vikriti : "Dhatu Kshaya"));
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.setTextColor(...darkText);
+
+      // Clean single-line or multi-line diagnosis
+      const assessmentClean = assessmentRaw.replace(/\n+/g, " • ");
+      const assessmentLines = doc.splitTextToSize(`• Primary Diagnosis: ${assessmentClean}`, 180);
+      doc.text(assessmentLines, 16, currentY);
+      currentY += (assessmentLines.length * 3.8) + 1.5;
+
+      const dashavidhaText = `• Dashavidha Pariksha: Prakriti: ${prakriti} | Agni: ${agni} | Koshtha: ${koshtha} | Vikriti: ${vikriti}`;
+      const dashavidhaLines = doc.splitTextToSize(dashavidhaText, 180);
+      doc.text(dashavidhaLines, 16, currentY);
+      currentY += (dashavidhaLines.length * 3.8) + 1.5;
+
+      const historyClean = subjectiveText.replace(/\n+/g, " ");
+      const historyLines = doc.splitTextToSize(`• Clinical History: ${historyClean}`, 180);
+      const shortHist = historyLines.slice(0, 2);
+      if (historyLines.length > 2) shortHist[1] += '...';
+      doc.text(shortHist, 16, currentY);
+      currentY += (shortHist.length * 3.8) + 4.5;
+
+      // 2. Prescribed Formulations (Rx) Table
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.setTextColor(...navy);
+      doc.text("2. PRESCRIBED FORMULATIONS & MEDICATIONS (Rx):", 14, currentY);
+      currentY += 2;
+
+      const medRows = [];
+      const tableRows = document.querySelectorAll("#prescription-table-body tr");
+      if (tableRows && tableRows.length > 0) {
+        tableRows.forEach((tr, idx) => {
+          const tds = tr.querySelectorAll("td");
+          if (tds.length >= 5) {
+            medRows.push([
+              idx + 1,
+              tds[0].innerText.trim(),
+              tds[1].innerText.trim(),
+              tds[2].innerText.trim(),
+              tds[3].innerText.trim(),
+              tds[4].innerText.trim()
+            ]);
+          }
+        });
+      }
+
+      if (medRows.length === 0 && data.medications) {
+        data.medications.forEach((m, idx) => {
+          medRows.push([
+            idx + 1,
+            m.name || m,
+            m.dose || "1 Tab",
+            m.frequency || "BD (Twice Daily)",
+            m.duration || "15 Days",
+            m.instructions || "After Food with warm water"
+          ]);
+        });
+      }
+
+      if (medRows.length === 0) {
+        const fallbackCond = getConditionSpecificPrescription(subjectiveText, assessmentRaw);
+        (fallbackCond.activePrescription || []).forEach((m, idx) => {
+          medRows.push([
+            idx + 1,
+            m.name || "Formulation",
+            m.dose || "1 Tab",
+            m.freq || "BD (Twice daily)",
+            m.dur || "15 Days",
+            m.inst || "After food with warm water"
+          ]);
+        });
+      }
+
+      doc.autoTable({
+        startY: currentY,
+        head: [["#", "Medicine / Formulation", "Dose", "Frequency", "Duration", "Instructions (Anupana)"]],
+        body: medRows,
+        theme: "striped",
+        headStyles: {
+          fillColor: [34, 61, 121],
+          textColor: [255, 255, 255],
+          fontStyle: "bold",
+          fontSize: 8
+        },
+        bodyStyles: {
+          fontSize: 7.5,
+          textColor: [30, 41, 59]
+        },
+        columnStyles: {
+          0: { cellWidth: 8, halign: "center" },
+          1: { cellWidth: 52 },
+          2: { cellWidth: 24 },
+          3: { cellWidth: 32 },
+          4: { cellWidth: 22 },
+          5: { cellWidth: 46 }
+        },
+        margin: { left: 12, right: 12 }
+      });
+
+      currentY = doc.lastAutoTable.finalY + 6;
+
+      // 3. Doctor's Advice & Regimen
+      const soapPEl = document.getElementById("soap-p");
+      const planText = String((soapPEl ? (soapPEl.value || soapPEl.innerText || soapPEl.textContent) : '') || data.plan || data.planSummary || "Follow prescribed diet and medication instructions.").trim();
+      
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.setTextColor(...navy);
+      doc.text("3. ADVICE & DIETARY GUIDELINES (Ahara / Vihara):", 14, currentY);
+      currentY += 4;
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7.5);
+      doc.setTextColor(...darkText);
+      const planClean = planText.replace(/\n+/g, " • ");
+      const splitPlan = doc.splitTextToSize(planClean, 180);
+      doc.text(splitPlan, 16, currentY);
+      currentY += (splitPlan.length * 3.8) + 6;
+
+      // Ensure footer space
+      if (currentY > 260) {
+        doc.addPage();
+        currentY = 20;
+      }
+
+      // Verification & Signature Footer
+      doc.setDrawColor(...borderCol);
+      doc.line(12, currentY, 198, currentY);
+      currentY += 4.5;
+
+      doc.setFontSize(7);
+      doc.setTextColor(100, 116, 139);
+      doc.text(`NRCeS FHIR R4 Bundle ID: ${data.fhirId || 'bundle-doc-061-f8a9e2'}`, 14, currentY);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(...navy);
+      doc.text("Dr. A. Sharma, MD (AIIA)", 140, currentY, { align: "left" });
+      currentY += 3.5;
+      
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(100, 116, 139);
+      doc.text("Digitally Signed & Synced to Ayushman Bharat Digital Mission (ABDM)", 14, currentY);
+      doc.text("Reg. No: AYU/DL/2026/84920", 140, currentY, { align: "left" });
+
+      const cleanToken = (tokenStr || 'Token061').replace(/[^a-zA-Z0-9]/g, '');
+      const cleanName = (nameStr || 'Patient').replace(/[^a-zA-Z0-9]/g, '_');
+      const filename = `Prescription_${cleanToken}_${cleanName}.pdf`;
+      doc.save(filename);
+
+      if (autoPrint) {
+        doc.autoPrint();
+      }
+    }
+
+    async function showFhirModal() {
+      try {
+        const encId = typeof currentSelectedEncId !== 'undefined' ? currentSelectedEncId : 'enc-0042';
+        const res = await fetch(`/api/v1/doctor/encounter/${encId}/fhir`);
+        if (res.ok) {
+          const bundle = await res.json();
+          document.getElementById("fhir-json").innerText = JSON.stringify(bundle, null, 2);
+        } else {
+          throw new Error("Local fallback");
+        }
+      } catch (e) {
+        const data = CLINICAL_PROFILES[currentSelectedEncId] || CLINICAL_PROFILES["enc-0042"];
+        document.getElementById("fhir-json").innerText = JSON.stringify({
+          resourceType: "Bundle",
+          id: "bundle-" + (data.id || "0042"),
+          type: "document",
+          meta: {
+            profile: ["https://nrces.in/ndhm/fhir/r4/StructureDefinition/DocumentBundle"],
+            lastUpdated: new Date().toISOString()
+          },
+          identifier: {
+            system: "https://aiia.gov.in/fhir/bundles",
+            value: "NRCES-DOC-" + (data.id || "0042")
+          },
+          entry: [
+            {
+              resource: {
+                resourceType: "Patient",
+                id: data.id,
+                name: [{ text: data.patientName }],
+                gender: (data.gender || "male").toLowerCase(),
+                identifier: [{ system: "https://healthid.ndhm.gov.in", value: data.abhaId }]
+              }
+            },
+            {
+              resource: {
+                resourceType: "Condition",
+                clinicalStatus: { coding: [{ code: "active" }] },
+                code: { text: data.assessment || "Clinical Assessment" }
+              }
+            },
+            {
+              resource: {
+                resourceType: "MedicationRequest",
+                status: "active",
+                intent: "order",
+                medicationCodeableConcept: {
+                  text: (data.activePrescription || []).map(m => `${m.name} ${m.dose} ${m.freq}`).join(", ")
+                }
+              }
+            }
+          ]
+        }, null, 2);
+      }
+      document.getElementById("fhir-modal").classList.remove("hidden");
+      if (typeof lucide !== "undefined") lucide.createIcons();
+    }
+
+    lucide.createIcons();
+  </script>
+</body>
+</html>

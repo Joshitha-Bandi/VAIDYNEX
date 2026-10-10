@@ -1,0 +1,35 @@
+.DS_Store
+.env
+*.env
+.env.*
+*.jks
+*.keystore
+google-services.json
+GoogleService-Info.plist
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.venv/
+env/
+venv/
+
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+kiosk_app/build/
+kiosk_app/.dart_tool/
+kiosk_app/ios/Pods/
+kiosk_app/macos/Pods/
+kiosk_app/.flutter-plugins
+kiosk_app/.flutter-plugins-dependencies
+
+# Node / JS
+node_modules/
+.next/
+dist/

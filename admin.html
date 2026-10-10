@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22><rect width=%2232%22 height=%2232%22 rx=%228%22 fill=%22%23223D79%22/><path d=%22M16 8v16M8 16h16%22 stroke=%22%23FFA530%22 stroke-width=%224%22 stroke-linecap=%22round%22/></svg>">
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MediKiosk — Hospital Administrative & National Telemetry Hub</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              navy: "#223D79",
+              grey: "#77797C",
+              white: "#FFFFFF",
+              beige: "#D9CDBA",
+              orange: "#FFA530"
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --brand-navy: #223D79;
+      --brand-grey: #77797C;
+      --brand-white: #FFFFFF;
+      --brand-beige: #D9CDBA;
+      --brand-orange: #FFA530;
+    }
+    .bg-brand-navy { background-color: #223D79 !important; }
+    .text-brand-navy { color: #223D79 !important; }
+    .border-brand-navy { border-color: #223D79 !important; }
+    .bg-brand-orange { background-color: #FFA530 !important; }
+    .text-brand-orange { color: #FFA530 !important; }
+    .border-brand-orange { border-color: #FFA530 !important; }
+    .bg-brand-beige { background-color: #D9CDBA !important; }
+    .text-brand-beige { color: #D9CDBA !important; }
+    .border-brand-beige { border-color: #D9CDBA !important; }
+    .bg-brand-grey { background-color: #77797C !important; }
+    .text-brand-grey { color: #77797C !important; }
+    .border-brand-grey { border-color: #77797C !important; }
+  </style>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
+    body { font-family: "Plus Jakarta Sans", sans-serif; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-client.js"></script>
+</head>
+<body class="bg-[#f4f1ed] text-[#223D79] min-h-screen flex flex-col">
+  <!-- Unified 5-Dashboard Suite Navigation -->
+    <!-- Unified 5-Dashboard Suite Navigation (5-Color Palette: #223D79, #77797C, #FFFFFF, #D9CDBA, #FFA530) -->
+  <nav class="bg-[#223D79] text-[#D9CDBA] border-b-2 border-[#FFA530] text-xs px-6 py-2.5 flex flex-wrap items-center justify-between sticky top-0 z-50 shadow-md">
+    <div class="flex items-center space-x-3">
+      <span class="w-2.5 h-2.5 rounded-full bg-[#FFA530] animate-pulse"></span>
+      <span class="font-extrabold text-[#223D79] tracking-wide uppercase text-[11px]">MediKiosk Suite (PS 26047)</span>
+    </div>
+    <div class="flex flex-wrap items-center gap-2 mt-1 sm:mt-0">
+      <a href="/" class="text-[#D9CDBA] hover:text-white font-semibold px-3 py-1 rounded-md hover:bg-[#223D79] text-white border border-[#D9CDBA]/20 transition">📱 Patient Kiosk</a>
+      <a href="/doctor" class="text-[#D9CDBA] hover:text-white font-semibold px-3 py-1 rounded-md hover:bg-[#223D79] text-white border border-[#D9CDBA]/20 transition">🩺 Doctor Portal</a>
+      <a href="/triage" class="text-[#D9CDBA] hover:text-white font-semibold px-3 py-1 rounded-md hover:bg-[#223D79] text-white border border-[#D9CDBA]/20 transition">🚨 Emergency Triage</a>
+      <a href="/ayush" class="text-[#D9CDBA] hover:text-white font-semibold px-3 py-1 rounded-md hover:bg-[#223D79] text-white border border-[#D9CDBA]/20 transition">🌿 AYUSH Dashavidha</a>
+      <a href="/admin" class="bg-[#FFA530] text-[#223D79] font-black shadow px-3 py-1 rounded-md">📊 Admin & ABDM Hub</a>
+    </div>
+  </nav>
+
+  <!-- Header with Live Actions -->
+  <header class="bg-[#223D79] text-white border border-[#D9CDBA]/80 shadow-sm border-b border-[#D9CDBA]/60 px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4">
+    <div class="flex items-center space-x-4">
+      <img src="/assets/logo.jpg" alt="Ministry of Ayush Emblem" class="w-10 h-10 rounded-full shadow-md border border-amber-400/60 object-cover inline-block">
+      <div>
+        <h1 class="font-bold text-lg text-white flex items-center gap-2">
+          Hospital Administrative & National Telemetry Hub
+          <span class="text-xs bg-[#FFA530]/20 text-[#FFA530] font-bold px-2.5 py-0.5 rounded-full border border-[#FFA530]/40">NHA Tier-1 Live</span>
+        </h1>
+        <p class="text-xs text-[#D9CDBA]">All India Institute of Ayurveda (AIIA) • Facility ID: IN0110000142</p>
+      </div>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      <button onclick="pingAbdmSandbox()" class="bg-[#223D79] hover:bg-[#223D79] text-white text-white text-xs font-bold px-3 py-2 rounded-xl border border-[#D9CDBA]/30 flex items-center gap-1.5 transition shadow">
+        <i data-lucide="activity" class="w-3.5 h-3.5 text-[#FFA530]"></i>
+        <span>Ping ABDM Gateway</span>
+      </button>
+      <button onclick="simulateNhcxClaim()" class="bg-[#FFA530] hover:bg-[#ff9510] text-[#223D79] text-xs font-black px-3.5 py-2 rounded-xl shadow flex items-center gap-1.5 transition">
+        <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
+        <span>Simulate NHCX Claim</span>
+      </button>
+      <button onclick="viewLiveFhirBundle()" class="bg-white shadow-sm hover:bg-[#e8e4df] text-[#D9CDBA] text-xs font-bold px-3 py-2 rounded-xl border border-[#D9CDBA]/60 flex items-center gap-1.5 transition">
+        <i data-lucide="file-code" class="w-3.5 h-3.5 text-[#223D79]"></i>
+        <span>View FHIR R4 Bundle</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="flex-1 p-6 space-y-6 max-w-7xl mx-auto w-full">
+    <!-- Top Stat Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="bg-white border border-[#D9CDBA]/80 shadow-sm p-5 rounded-2xl border border-[#D9CDBA]/60 hover:border-[#FFA530]/40 transition shadow-sm">
+        <p class="text-xs text-[#77797C] font-bold uppercase tracking-wider">Total OPD Intakes Today</p>
+        <p id="stat-opd-intakes" class="text-3xl font-black text-[#223D79] mt-1">4,284</p>
+        <p class="text-[11px] text-emerald-700 mt-1 font-semibold flex items-center gap-1">
+          <i data-lucide="trending-up" class="w-3 h-3"></i> ↑ 14% vs traditional manual queue
+        </p>
+      </div>
+
+      <div class="bg-white border border-[#D9CDBA]/80 shadow-sm p-5 rounded-2xl border border-[#D9CDBA]/60 hover:border-blue-500/40 transition shadow-sm">
+        <p class="text-xs text-[#77797C] font-bold uppercase tracking-wider">Avg Doctor Review Time</p>
+        <p class="text-3xl font-black text-[#223D79] mt-1">14.2 sec</p>
+        <p class="text-[11px] text-[#77797C] mt-1">Reduced from 2.8 mins (90% cut)</p>
+      </div>
+
+      <div class="bg-white border border-[#D9CDBA]/80 shadow-sm p-5 rounded-2xl border border-[#D9CDBA]/60 hover:border-[#FFA530]/40 transition shadow-sm">
+        <p class="text-xs text-[#77797C] font-bold uppercase tracking-wider">PM-JAY Cashless Claims</p>
+        <p class="text-3xl font-black text-[#FFA530] mt-1">₹14.8 Lakh</p>
+        <p class="text-[11px] text-[#77797C] mt-1 font-semibold">316 Verified Beneficiaries</p>
+      </div>
+
+      <div class="bg-white border border-[#D9CDBA]/80 shadow-sm p-5 rounded-2xl border border-[#D9CDBA]/60 hover:border-emerald-500/40 transition shadow-sm">
+        <p class="text-xs text-[#77797C] font-bold uppercase tracking-wider">ABDM Records Synced</p>
+        <p class="text-3xl font-black text-emerald-700 mt-1">100% (M1–M3)</p>
+        <p class="text-[11px] text-[#223D79] mt-1 font-semibold">Eka Care Gateway Healthy</p>
+      </div>
+    </div>
+
+    <!-- Middle Dual Panels -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Left: National Ecosystem Connectivity -->
+      <div class="bg-white border border-[#D9CDBA]/80 shadow-sm rounded-2xl border border-[#D9CDBA]/60 p-5 space-y-4">
+        <div class="flex items-center justify-between border-b border-[#D9CDBA]/60 pb-3">
+          <h2 class="font-bold text-sm text-[#223D79] flex items-center gap-2">
+            <i data-lucide="network" class="w-4 h-4 text-[#223D79]"></i>
+            National Health Ecosystem Health
+          </h2>
+          <span class="text-[10px] bg-emerald-500/20 text-[#223D79] font-bold px-2 py-0.5 rounded border border-emerald-500/30">All Services Operational</span>
+        </div>
+
+        <div class="space-y-3">
+          <div class="p-3 bg-[#f8fafc] border border-[#D9CDBA]/60 rounded-xl border border-[#D9CDBA]/60/80 flex items-center justify-between">
+            <div>
+              <p class="font-bold text-xs text-[#223D79]">Eka Care ABDM Gateway (M1 ABHA / M2 HIP / M3 HIU)</p>
+              <p class="text-[11px] text-[#77797C] mt-0.5">NHA Certified Production Gateway (Uptime: 99.98%)</p>
+            </div>
+            <span class="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded border border-emerald-500/30">ONLINE</span>
+          </div>
+
+          <div class="p-3 bg-[#f8fafc] border border-[#D9CDBA]/60 rounded-xl border border-[#D9CDBA]/60/80 flex items-center justify-between">
+            <div>
+              <p class="font-bold text-xs text-[#223D79]">NHA NHCX Claims Exchange Engine</p>
+              <p class="text-[11px] text-[#77797C] mt-0.5">CoverageEligibilityRequest & Claim FHIR Endpoints</p>
+            </div>
+            <span class="text-xs font-bold text-[#FFA530] bg-[#FFA530]/20 px-2.5 py-1 rounded border border-[#FFA530]/30">ACTIVE</span>
+          </div>
+
+          <div class="p-3 bg-[#f8fafc] border border-[#D9CDBA]/60 rounded-xl border border-[#D9CDBA]/60/80 flex items-center justify-between">
+            <div>
+              <p class="font-bold text-xs text-[#223D79]">NRCeS FHIR R4 DocumentBundle Validator</p>
+              <p class="text-[11px] text-[#77797C] mt-0.5">bdl-11 Invariant Compliance Engine (100% Compliant)</p>
+            </div>
+            <span class="text-xs font-bold text-white bg-[#223D79]/10 px-2.5 py-1 rounded border border-blue-500/30">VALIDATED</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Sovereign AI Model Inference Telemetry -->
+      <div class="bg-white border border-[#D9CDBA]/80 shadow-sm rounded-2xl border border-[#D9CDBA]/60 p-5 space-y-4">
+        <div class="flex items-center justify-between border-b border-[#D9CDBA]/60 pb-3">
+          <h2 class="font-bold text-sm text-[#223D79] flex items-center gap-2">
+            <i data-lucide="cpu" class="w-4 h-4 text-[#FFA530]"></i>
+            Sovereign AI Model Inference Telemetry
+          </h2>
+          <span class="text-[10px] bg-[#223D79] text-[#FFA530] font-bold px-2 py-0.5 rounded border border-[#FFA530]/40">In-Country Edge LPU</span>
+        </div>
+
+        <div class="space-y-3">
+          <div class="p-3 bg-[#f8fafc] border border-[#D9CDBA]/60 rounded-xl border border-[#D9CDBA]/60/80 flex items-center justify-between">
+            <div>
+              <p class="font-bold text-xs text-[#223D79]">Sarvam-105B Sovereign Clinical Scribe (Indic Foundational LLM)</p>
+              <p class="text-[11px] text-[#77797C] mt-0.5">Sub-200ms SOAP Synthesis & Dual NAMASTE/ICD-10 Coding</p>
+            </div>
+            <span class="text-xs font-black text-[#FFA530]">142ms Avg Latency</span>
+          </div>
+
+          <div class="p-3 bg-[#f8fafc] border border-[#D9CDBA]/60 rounded-xl border border-[#D9CDBA]/60/80 flex items-center justify-between">
+            <div>
+              <p class="font-bold text-xs text-[#223D79]">Sarvam Bulbul v3 & Mayura v1 (8 Indic Languages)</p>
+              <p class="text-[11px] text-[#77797C] mt-0.5">Telugu, Hindi, Tamil, Kannada, Marathi, Bengali, Gujarati, English</p>
+            </div>
+            <span class="text-xs font-bold text-emerald-700">96.4% Accuracy</span>
+          </div>
+
+          <div class="p-3 bg-[#f8fafc] border border-[#D9CDBA]/60 rounded-xl border border-[#D9CDBA]/60/80 flex items-center justify-between">
+            <div>
+              <p class="font-bold text-xs text-[#223D79]">Sarvam Vision 3B VLM (Prescription OCR)</p>
+              <p class="text-[11px] text-[#77797C] mt-0.5">Cursive Handwriting & Multi-column Lab Extractor</p>
+            </div>
+            <span class="text-xs font-bold text-[#223D79]">94.8% Recognition</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live ABDM Intake & Claims Audit Trail Table -->
+    <div class="bg-white border border-[#D9CDBA]/80 shadow-sm rounded-2xl border border-[#D9CDBA]/60 p-5 space-y-4">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-[#D9CDBA]/60 pb-3">
+        <div>
+          <h2 class="font-bold text-sm text-[#223D79] flex items-center gap-2">
+            <i data-lucide="list-ordered" class="w-4 h-4 text-emerald-700"></i>
+            Live Real-Time Hospital OPD Intake & ABDM Transaction Feed
+          </h2>
+          <p class="text-xs text-[#77797C] mt-0.5">Streaming real-time transactions from Patient Kiosks and Doctor Consultation Chambers</p>
+        </div>
+        <button onclick="refreshTransactionFeed()" class="bg-[#223D79] text-white hover:bg-[#FFA530] hover:text-white text-[#D9CDBA] text-xs font-bold py-1.5 px-3 rounded-lg border border-[#D9CDBA]/30 transition flex items-center gap-1.5">
+          <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+          <span>Refresh Feed</span>
+        </button>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs border-collapse">
+          <thead>
+            <tr class="border-b border-[#D9CDBA]/60 text-[#77797C] font-bold uppercase tracking-wider bg-[#f8fafc] border border-[#D9CDBA]/60">
+              <th class="p-3">Token #</th>
+              <th class="p-3">Patient Name</th>
+              <th class="p-3">ABHA Number</th>
+              <th class="p-3">Diagnosis / Chief Complaint</th>
+              <th class="p-3">ABDM M1 Status</th>
+              <th class="p-3">PM-JAY Claim</th>
+              <th class="p-3 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="transaction-table-body" class="divide-y divide-[#D9CDBA]/60/80">
+            <!-- Dynamically populated rows -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- FHIR Bundle Modal -->
+  <div id="fhir-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white border border-[#D9CDBA]/80 shadow-sm border border-[#D9CDBA]/60 rounded-2xl max-w-3xl w-full max-h-[85vh] flex flex-col shadow-2xl">
+      <div class="p-4 border-b border-[#D9CDBA]/60 flex items-center justify-between">
+        <h3 class="font-bold text-[#223D79] text-sm flex items-center gap-2">
+          <i data-lucide="file-code" class="w-4 h-4 text-[#223D79]"></i>
+          NRCeS HL7 FHIR R4 DocumentBundle Inspector
+        </h3>
+        <button onclick="closeFhirModal()" class="text-[#77797C] hover:text-[#223D79] text-sm font-bold">✕ Close</button>
+      </div>
+      <div class="p-4 flex-1 overflow-y-auto font-mono text-xs text-[#223D79]/90 bg-[#f8fafc] border border-[#D9CDBA]/60">
+        <pre id="fhir-json-display"></pre>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    lucide.createIcons();
+
+    const BASE_TRANSACTIONS = [
+      {
+        token: "#E-012",
+        name: "Mohan Das",
+        age: 61,
+        gender: "Male",
+        abha: "91-7712-4019-3382",
+        complaint: "Acute Coronary Syndrome (STEMI)",
+        isEmergency: true,
+        abdmStatus: "M1 Verified",
+        pmjayStatus: "APPROVED (₹75,000 STAT)",
+        time: "10:45 AM"
+      },
+      {
+        token: "#042",
+        name: "Ramesh Chandra",
+        age: 52,
+        gender: "Male",
+        abha: "91-4829-1029-4821",
+        complaint: "Sandhigata Vata (Knee OA)",
+        isEmergency: false,
+        abdmStatus: "M1 Verified",
+        pmjayStatus: "APPROVED (₹5,000)",
+        time: "10:30 AM"
+      },
+      {
+        token: "#043",
+        name: "Priya Sharma",
+        age: 34,
+        gender: "Female",
+        abha: "91-5910-2941-8402",
+        complaint: "Amlapitta (Acid Peptic Disorder)",
+        isEmergency: false,
+        abdmStatus: "M1 Verified",
+        pmjayStatus: "APPROVED (₹3,200)",
+        time: "10:35 AM"
+      },
+      {
+        token: "#044",
+        name: "Ananya Verma",
+        age: 28,
+        gender: "Female",
+        abha: "91-9123-4567-8901",
+        complaint: "Vishama Jwara (Viral Pyrexia)",
+        isEmergency: false,
+        abdmStatus: "M1 Verified",
+        pmjayStatus: "APPROVED (₹2,500)",
+        time: "10:40 AM"
+      }
+    ];
+
+    async function refreshTransactionFeed() {
+      let allTx = [];
+      try {
+        const { data, error } = await window.supabase
+          .from('encounters')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (error) throw error;
+        
+        allTx = data.map(q => ({
+            token: q.token_number,
+            patientName: q.patient_name,
+            age: q.age,
+            gender: q.gender,
+            diagnosis: q.chief_complaint || "Pending",
+            status: q.status || "WAITING",
+            time: new Date(q.created_at).toLocaleTimeString()
+        }));
+      } catch (err) {
+        console.error("Supabase fetch failed", err);
+      }
+      
