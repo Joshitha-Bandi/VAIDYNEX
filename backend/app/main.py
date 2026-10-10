@@ -38,7 +38,7 @@ except (ImportError, ValueError):
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
-    description="MediKiosk Sovereign AI Multimodal Clinical Intake & ABDM Gateway"
+    description="VAIDYNEX Sovereign AI Multimodal Clinical Intake & ABDM Gateway"
 )
 
 app.add_middleware(
@@ -106,7 +106,7 @@ def _serve_file(filename: str):
     if embedded_bytes:
         return Response(content=embedded_bytes, media_type=media_type, status_code=200)
 
-    return HTMLResponse(f"<h1>MediKiosk - {filename}</h1>", status_code=404)
+    return HTMLResponse(f"<h1>VAIDYNEX - {filename}</h1>", status_code=404)
 
 @app.get("/")
 @app.get("/kiosk")

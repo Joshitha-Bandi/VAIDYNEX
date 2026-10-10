@@ -21,7 +21,7 @@ class NRCeSFHIRService:
                             "coding": [{"system": "http://snomed.info/sct", "code": "371530004", "display": "Clinical consultation report"}]
                         },
                         "subject": {"reference": f"Patient/{patient_id}"},
-                        "title": "MediKiosk Structured Outpatient Intake Summary",
+                        "title": "VAIDYNEX Structured Outpatient Intake Summary",
                         "section": [
                             {"title": "Chief Complaints & HPI", "text": {"status": "generated", "div": soap_note.get("subjective", "")}},
                             {"title": "Observations & Results", "text": {"status": "generated", "div": soap_note.get("objective", "")}},

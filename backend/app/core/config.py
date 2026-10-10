@@ -7,7 +7,7 @@ from typing import Optional
 _ENV_FILE = Path(__file__).resolve().parent.parent.parent / ".env"
 
 class Settings(BaseSettings):
-    PROJECT_NAME: str = "MediKiosk Clinical Intelligence Gateway"
+    PROJECT_NAME: str = "VAIDYNEX Clinical Intelligence Gateway"
     VERSION: str = "1.0.0"
     API_V1_STR: str = "/api/v1"
 

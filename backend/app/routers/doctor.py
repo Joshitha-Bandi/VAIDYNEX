@@ -178,7 +178,7 @@ async def create_new_encounter(payload: NewIntakePayload):
     }
     soap_row = {
         "encounter_id": enc_id,
-        "subjective": f"Patient {payload.patient_name} ({payload.age}Y) registered via MediKiosk ({payload.identifier_type.upper()}: {payload.identifier_value}). Chief Complaint: {payload.symptoms}.",
+        "subjective": f"Patient {payload.patient_name} ({payload.age}Y) registered via VAIDYNEX ({payload.identifier_type.upper()}: {payload.identifier_value}). Chief Complaint: {payload.symptoms}.",
         "objective": "Clinical Vitals: [To be recorded by consulting physician in OPD chamber]",
         "assessment": "1. Initial OPD Assessment\n2. PM-JAY Cashless OPD Benefit Active",
         "plan": "Clinical consultation pending. Recommended preliminary Ayurvedic Rasayana therapy.",

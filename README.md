@@ -1,4 +1,4 @@
-# 🏥 MediKiosk — AI-Powered Patient Case-Taking Software
+# 🏥 VAIDYNEX — AI-Powered Patient Case-Taking Software
 ### *Smart India Hackathon (SIH 2026) | Problem Statement ID: 26047*
 **Ministry/Department:** All India Institute of Ayurveda (AIIA), Ministry of Ayush  
 **Theme:** MedTech / HealthTech / BioTech • **Category:** Software  
@@ -15,7 +15,7 @@ Within this window, physicians must:
 2. Manually decipher crumpled, handwritten prior paper prescriptions and lab reports.
 3. Perform physical examinations, assess Ayurveda's deep *Dashavidha Pariksha* (Prakriti, Vikriti, Agni, Koshtha), formulate diagnoses, and prescribe.
 
-**MediKiosk** solves this "first-mile" clinical bottleneck. It is an autonomous, multimodal, self-service clinical intake platform that captures structured medical history through natural voice conversations in 11+ Indic languages, digitizes paper documents with Vision AI, flags emergency red-flags, and pushes standardized, physician-ready SOAP notes and FHIR bundles to the ABDM ecosystem before the patient enters the consultation room.
+**VAIDYNEX** solves this "first-mile" clinical bottleneck. It is an autonomous, multimodal, self-service clinical intake platform that captures structured medical history through natural voice conversations in 11+ Indic languages, digitizes paper documents with Vision AI, flags emergency red-flags, and pushes standardized, physician-ready SOAP notes and FHIR bundles to the ABDM ecosystem before the patient enters the consultation room.
 
 ---
 
@@ -75,8 +75,8 @@ Within this window, physicians must:
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/potlasrisharan/medikiosk-sih2026.git
-cd medikiosk-sih2026
+git clone https://github.com/potlasrisharan/vaidynex-sih2026.git
+cd vaidynex-sih2026
 ```
 
 ### 2. Install Dependencies

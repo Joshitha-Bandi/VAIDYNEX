@@ -1,7 +1,7 @@
 {
-  "name": "medikiosk-sih2026",
+  "name": "vaidynex",
   "version": "1.0.0",
-  "description": "MediKiosk Sovereign AI Multimodal Clinical Intake Suite",
+  "description": "VAIDYNEX Sovereign AI Multimodal Clinical Intake Suite - Intelligent Care. Connected History.",
   "scripts": {
     "start": "npx serve -l 3000 .",
     "dev": "npx vercel dev",

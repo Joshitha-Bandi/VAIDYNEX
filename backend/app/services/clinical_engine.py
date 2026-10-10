@@ -124,7 +124,7 @@ def call_sarvam_clinical_llm(patient_symptoms: str, language: str = "en-IN") -> 
 
     # Deterministic fallback
     return {
-        "subjective": f"Patient reports {patient_symptoms}. Elicited via sovereign clinical gateway.",
+        "subjective": f"Patient reports {patient_symptoms}. Elicited via VAIDYNEX sovereign clinical gateway.",
         "assessment": "Sandhigata Vata (Osteoarthritis / ICD-10 M17.0 / NAMASTE AYU-SAN-01)",
         "namaste_code": "NAMASTE AYU-SAN-01",
         "icd10_code": "ICD-10 M17.0",
